@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anchors 통합 문서 뷰어</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/[email protected]/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<style>
+  :root {
+    --bg-page: #f5f6f8;
+    --bg-content: #ffffff;
+    --bg-sidebar: #1a1d23;
+    --bg-sidebar-hover: #252932;
+    --bg-sidebar-active: #2d3340;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-muted: #6b7280;
+    --text-sidebar: #d1d5db;
+    --text-sidebar-muted: #9ca3af;
+    --text-sidebar-active: #ffffff;
+    --gold: #c9a14a;
+    --accent: #2563eb;
+    --accent-soft: #eff6ff;
+    --danger: #dc2626;
+    --danger-soft: #fef2f2;
+    --warning: #d97706;
+    --warning-soft: #fffbeb;
+    --success: #059669;
+    --success-soft: #ecfdf5;
+    --info: #0891b2;
+    --info-soft: #ecfeff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    display: flex;
+    min-height: 100vh;
+  }
+  /* LNB */
+  .lnb {
+    width: 280px;
+    background: var(--bg-sidebar);
+    color: var(--text-sidebar);
+    flex-shrink: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+  }
+  .lnb-header {
+    padding: 22px 22px 18px;
+    border-bottom: 1px solid #2d3340;
+  }
+  .lnb-brand {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-sidebar-active);
+    letter-spacing: -0.3px;
+  }
+  .lnb-brand .accent { color: var(--gold); }
+  .lnb-sub {
+    font-size: 11.5px;
+    color: var(--text-sidebar-muted);
+    margin-top: 4px;
+    letter-spacing: 0.2px;
+  }
+  .lnb-nav { padding: 12px 0 40px; }
+  .lnb-group {
+    padding: 14px 22px 6px;
+    font-size: 11px;
+    color: var(--text-sidebar-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+  }
+  .lnb-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text-sidebar);
+    padding: 10px 22px 10px 22px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    border-left: 3px solid transparent;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .lnb-item:hover {
+    background: var(--bg-sidebar-hover);
+    color: var(--text-sidebar-active);
+  }
+  .lnb-item.active {
+    background: var(--bg-sidebar-active);
+    color: var(--text-sidebar-active);
+    border-left-color: var(--gold);
+    font-weight: 600;
+  }
+  .lnb-item-meta {
+    font-size: 11px;
+    color: var(--text-sidebar-muted);
+    margin-top: 2px;
+    font-weight: 400;
+  }
+  .lnb-footer {
+    padding: 14px 22px;
+    font-size: 11px;
+    color: var(--text-sidebar-muted);
+    border-top: 1px solid #2d3340;
+    line-height: 1.5;
+  }
+  /* Main */
+  .main {
+    margin-left: 280px;
+    flex: 1;
+    min-width: 0;
+  }
+  .topbar {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 36px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .breadcrumb { font-size: 12px; color: var(--text-muted); }
+  .breadcrumb span.sep { margin: 0 8px; }
+  .breadcrumb span.current { color: var(--text-primary); font-weight: 600; }
+  .topbar-meta {
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+  .content {
+    padding: 32px 48px 80px;
+    max-width: 1280px;
+  }
+  .doc { display: none; }
+  .doc.active { display: block; animation: fadeIn 0.2s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .doc-header {
+    padding-bottom: 22px;
+    border-bottom: 2px solid var(--text-primary);
+    margin-bottom: 32px;
+  }
+  .doc-tag {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--gold);
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .doc-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.6px;
+    line-height: 1.3;
+  }
+  .doc-meta {
+    margin-top: 10px;
+    display: flex;
+    gap: 18px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+  .doc-meta span strong { color: var(--text-primary); font-weight: 600; }
+
+  h2.section {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 36px 0 14px;
+    padding-left: 12px;
+    border-left: 4px solid var(--gold);
+    letter-spacing: -0.3px;
+  }
+  h3.subsec {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 22px 0 10px;
+  }
+  p.lead {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    line-height: 1.7;
+  }
+  /* KPI 카드 */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 20px 0 24px;
+  }
+  .kpi-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 20px;
+  }
+  .kpi-card.danger-top { border-top: 3px solid var(--danger); }
+  .kpi-label {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.8px;
+  }
+  .kpi-sub {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  /* Alert */
+  .alert {
+    background: var(--danger-soft);
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin: 20px 0;
+  }
+  .alert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #fecaca;
+    margin-bottom: 14px;
+  }
+  .alert-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--danger);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .alert-meta { font-size: 11.5px; color: var(--text-secondary); }
+  .alert-row {
+    background: #fff;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .alert-row.warning { border-color: #fde68a; }
+  .alert-row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .alert-code {
+    display: inline-block;
+    background: var(--danger);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-right: 8px;
+  }
+  .alert-row.warning .alert-code { background: var(--warning); }
+  .alert-name { font-weight: 600; font-size: 13.5px; }
+  .alert-pm { font-size: 11.5px; color: var(--text-muted); }
+  .alert-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .alert-stats div small { color: var(--text-muted); display: block; font-size: 11px; margin-bottom: 2px; }
+  .alert-stats div b { font-weight: 700; }
+  .alert-stats .neg { color: var(--danger); }
+  .alert-stats .pos { color: var(--success); }
+  .alert-cause { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .alert-action {
+    background: #fff7ed;
+    border-left: 3px solid var(--warning);
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* Table */
+  table.data {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 12.5px;
+    background: #fff;
+    border: 1px solid var(--border);
+  }
+  table.data thead th {
+    background: #f9fafb;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11.5px;
+    letter-spacing: 0.3px;
+  }
+  table.data tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.data tbody tr:hover { background: #fafbfc; }
+  table.data .num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.data .center { text-align: center; }
+  table.data .group-row td {
+    background: #f3f4f6;
+    font-weight: 700;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+  }
+  /* Status pill */
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .pill.ok { background: var(--success-soft); color: var(--success); }
+  .pill.warn { background: var(--warning-soft); color: var(--warning); }
+  .pill.danger { background: var(--danger-soft); color: var(--danger); }
+  .pill.info { background: var(--info-soft); color: var(--info); }
+  .pill.muted { background: #f3f4f6; color: var(--text-muted); }
+  .pill.gold { background: #fdf6e3; color: #9a7822; }
+
+  /* Margin coloring */
+  .m-good { color: var(--success); font-weight: 600; }
+  .m-warn { color: var(--warning); font-weight: 600; }
+  .m-bad { color: var(--danger); font-weight: 600; }
+
+  /* Confidential blur — 민감 수치 마스킹 (hover 시 해제) */
+  .blur {
+    filter: blur(5px);
+    -webkit-filter: blur(5px);
+    background: rgba(0,0,0,0.04);
+    border-radius: 3px;
+    padding: 0 2px;
+    transition: filter 0.18s ease, background 0.18s ease;
+    cursor: help;
+    user-select: none;
+  }
+  .blur:hover {
+    filter: blur(0);
+    -webkit-filter: blur(0);
+    background: rgba(201,161,74,0.12);
+    user-select: text;
+  }
+
+  /* Issue panels */
+  .issue-grid { display: grid; gap: 10px; margin: 12px 0; }
+  .issue-row {
+    display: grid;
+    grid-template-columns: 80px 110px 1fr;
+    gap: 14px;
+    align-items: start;
+    padding: 12px 14px;
+    border-radius: 5px;
+    background: #fff;
+    border: 1px solid var(--border);
+    font-size: 12.5px;
+  }
+  .issue-row.p1 { background: var(--danger-soft); border-color: #fecaca; }
+  .issue-row.p2 { background: var(--warning-soft); border-color: #fde68a; }
+  .issue-row.p3 { background: var(--info-soft); border-color: #a5f3fc; }
+  .issue-row code {
+    background: #fff;
+    border: 1px solid var(--border-strong);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: center;
+  }
+  .issue-tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-align: center;
+  }
+  .p1 .issue-tag { background: var(--danger); color: #fff; }
+  .p2 .issue-tag { background: var(--warning); color: #fff; }
+  .p3 .issue-tag { background: var(--info); color: #fff; }
+
+  /* Diagnosis cards */
+  .diag-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 18px 0 24px;
+  }
+  .diag-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--text-primary);
+    padding: 18px 20px;
+  }
+  .diag-num {
+    font-size: 22px;
+    color: var(--gold);
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .diag-title { font-weight: 700; font-size: 13.5px; margin-bottom: 8px; color: var(--text-primary); }
+  .diag-body { font-size: 12.5px; color: var(--text-secondary); line-height: 1.65; }
+
+  /* Mendelow Matrix — 이해관계자 그리드 맵 */
+  .mendelow-wrap {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 0;
+    margin: 18px 0 8px;
+  }
+  .mendelow-y-axis {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+  }
+  .mendelow-y-axis .y-label { font-size: 12.5px; color: var(--text-primary); }
+  .mendelow-y-axis .y-arrow { color: var(--accent-gold); }
+  .mendelow-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+  }
+  .mendelow-cell {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 14px 12px;
+    min-height: 165px;
+    position: relative;
+    overflow: hidden;
+  }
+  .mendelow-cell.q-manage {
+    border-color: #f5cdb6;
+    background: linear-gradient(180deg, #fef6f0 0%, #fff 60%);
+  }
+  .mendelow-cell.q-satisfy {
+    border-color: #f0d99a;
+    background: linear-gradient(180deg, #fcf6e3 0%, #fff 60%);
+  }
+  .mendelow-cell.q-inform {
+    border-color: #bdd7eb;
+    background: linear-gradient(180deg, #eef6fb 0%, #fff 60%);
+  }
+  .mendelow-cell.q-monitor {
+    border-color: #d0d4d9;
+    background: linear-gradient(180deg, #f3f4f6 0%, #fff 60%);
+  }
+  .mendelow-q-tag {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .q-manage .mendelow-q-tag { background: #e8553a; color: #fff; }
+  .q-satisfy .mendelow-q-tag { background: #c9a14a; color: #fff; }
+  .q-inform .mendelow-q-tag { background: #4a7ba7; color: #fff; }
+  .q-monitor .mendelow-q-tag { background: #767676; color: #fff; }
+  .mendelow-q-title { font-weight: 700; font-size: 13.5px; color: var(--text-primary); margin-bottom: 4px; }
+  .mendelow-q-strategy { font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+  .mendelow-actors { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+  .mendelow-actor-chip {
+    display: inline-block;
+    background: rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.08);
+    padding: 2px 8px;
+    margin: 2px 4px 2px 0;
+    border-radius: 4px;
+    font-size: 11.5px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .mendelow-x-axis {
+    grid-column: 2;
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+  }
+  .mendelow-x-axis .x-label { color: var(--text-primary); font-size: 12.5px; }
+  .mendelow-x-axis .x-arrow { color: var(--accent-gold); margin: 0 8px; }
+  .mendelow-legend {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    background: #f8f9fb;
+    border-left: 3px solid var(--accent-gold);
+    padding: 8px 12px;
+    margin: 8px 0 0;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.6;
+  }
+
+  /* Decision Matrix — 의사결정 매트릭스 (방어 전략) */
+  .decision-matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 14px 0 6px;
+    font-size: 13px;
+  }
+  .decision-matrix thead th {
+    background: #eef0f3;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 12.5px;
+    text-align: left;
+    padding: 11px 14px;
+    border-bottom: 2px solid var(--border);
+  }
+  .decision-matrix thead th:last-child { text-align: center; }
+  .decision-matrix tbody td {
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
+    vertical-align: middle;
+  }
+  .decision-matrix tbody td:last-child { text-align: center; }
+  .decision-matrix tbody tr:hover td { background: #fafbfc; }
+  .decision-matrix tbody tr.highlighted td:first-child {
+    font-weight: 700;
+    background: linear-gradient(180deg, transparent 30%, #fff3a8 30%, #fff3a8 85%, transparent 85%);
+  }
+  .dm-mark {
+    display: inline-block;
+    background: linear-gradient(180deg, transparent 30%, #fff3a8 30%, #fff3a8 85%, transparent 85%);
+    font-weight: 700;
+    padding: 0 2px;
+  }
+  .dm-x { color: var(--danger); font-size: 16px; font-weight: 700; }
+  .dm-ok { color: var(--success); font-size: 16px; font-weight: 700; }
+  .dm-required {
+    display: inline-block;
+    background: #fff3a8;
+    color: #8b6914;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .dm-conditional {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 12.5px;
+  }
+
+  /* Confirmation Letter — 확인 서신 예시 박스 */
+  .conf-letter {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--danger);
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin: 14px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .conf-letter-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .conf-letter-tag {
+    display: inline-block;
+    background: var(--danger);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+  }
+  .conf-letter-tag.budget { background: var(--warning); }
+  .conf-letter-meta { font-size: 11.5px; color: var(--text-muted); }
+  .conf-letter-subject {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+  }
+  .conf-letter-body {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.75;
+  }
+  .conf-letter-body b { color: var(--text-primary); }
+
+  /* Gap Table — 가설 vs 현실 대조표 */
+  .gap-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 14px 0 6px;
+    font-size: 12.5px;
+  }
+  .gap-table thead th {
+    background: #eef0f3;
+    font-weight: 700;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--border);
+    text-align: left;
+    font-size: 12px;
+  }
+  .gap-table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+  .gap-table tbody tr.has-gap td { background: #fef6f0; }
+  .gap-table .col-hyp { color: var(--text-secondary); }
+  .gap-table .col-real { color: var(--text-primary); font-weight: 500; }
+  .gap-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .gap-badge.ok { background: var(--success-soft); color: var(--success); }
+  .gap-badge.gap { background: var(--danger-soft); color: var(--danger); }
+  .gap-badge.warn { background: var(--warning-soft); color: var(--warning); }
+
+  /* Diagnosis Cards — 상황 진단 3단계 */
+  .triage-flow {
+    display: grid;
+    grid-template-columns: 1fr 32px 1fr 32px 1fr;
+    align-items: stretch;
+    gap: 0;
+    margin: 16px 0 8px;
+  }
+  .triage-step {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent-gold);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .triage-step-num {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--accent-gold);
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .triage-step-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .triage-step-body {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .triage-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-gold);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  /* Scope Confirmation — 수행범위 확정 체크리스트 */
+  .scope-checklist {
+    background: #fff;
+    border: 1px solid var(--text-primary);
+    border-radius: 6px;
+    padding: 18px 22px 16px;
+    margin: 12px 0;
+    counter-reset: scope-item;
+  }
+  .scope-check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed transparent;
+    counter-increment: scope-item;
+  }
+  .scope-check-item:not(:last-child) { border-bottom-color: var(--border); }
+  .scope-check-item::before {
+    content: counter(scope-item) ".";
+    flex: 0 0 22px;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding-top: 1px;
+  }
+  .scope-check-box {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--text-primary);
+    border-radius: 3px;
+    background: #fff;
+    margin-top: 2px;
+  }
+  .scope-check-body {
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+  }
+  .scope-check-body b {
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+
+  /* 빨강 강조 주의 박스 */
+  .scope-warning {
+    background: var(--danger-soft);
+    border-left: 4px solid var(--danger);
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.65;
+    font-weight: 600;
+  }
+  .scope-warning::before {
+    content: "✱";
+    color: var(--danger);
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .scope-warning .muted-paren {
+    font-weight: 400;
+    color: var(--text-secondary);
+  }
+
+  /* Steps */
+  .as-tobe {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    gap: 14px;
+    margin: 18px 0;
+    align-items: stretch;
+  }
+  .flow-box {
+    background: #fff;
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    border-radius: 5px;
+  }
+  .flow-box.as-is { border-top: 3px solid var(--text-muted); }
+  .flow-box.to-be { border-top: 3px solid var(--accent); }
+  .flow-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .as-is .flow-label { color: var(--text-muted); }
+  .to-be .flow-label { color: var(--accent); }
+  .flow-step {
+    font-size: 12.5px;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border);
+    color: var(--text-secondary);
+  }
+  .flow-step:last-child { border-bottom: 0; padding-top: 8px; font-weight: 600; color: var(--text-primary); }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: var(--gold);
+  }
+  .ladder {
+    margin: 18px 0;
+  }
+  .ladder-step {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    padding: 12px 18px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+  }
+  .ladder-step b { color: var(--accent); }
+  .ladder-arrow {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 4px 0;
+  }
+
+  /* Decision cards */
+  .decision {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .decision-header {
+    background: #1a1d23;
+    color: #fff;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .decision-num {
+    font-size: 11px;
+    color: var(--gold);
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    margin-right: 8px;
+  }
+  .decision-title { font-weight: 600; font-size: 14px; }
+  .decision-tag {
+    background: var(--gold);
+    color: #1a1d23;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-weight: 700;
+  }
+  .decision-body {
+    padding: 16px 20px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .decision-opts {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 0 20px 16px;
+  }
+  .opt-btn {
+    border: 1px solid var(--border-strong);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: #fff;
+  }
+
+  /* RACI styles */
+  .raci-table { font-size: 11.5px; }
+  .raci-table th { background: #1a1d23 !important; color: #fff !important; text-align: center; }
+  .raci-table .role-r { background: #dbeafe; color: #1e40af; }
+  .raci-table .role-a { background: #fef3c7; color: #92400e; }
+  .raci-table .role-c { background: #f3f4f6; color: var(--text-secondary); }
+  .raci-table .role-i { background: #e5e7eb; color: var(--text-muted); }
+  .raci-legend {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    margin: 10px 0 18px;
+    flex-wrap: wrap;
+  }
+  .raci-legend span b {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border-radius: 3px;
+    text-align: center;
+    line-height: 22px;
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .raci-legend .lr b { background: #dbeafe; color: #1e40af; }
+  .raci-legend .la b { background: #fef3c7; color: #92400e; }
+  .raci-legend .lc b { background: #f3f4f6; color: var(--text-secondary); }
+  .raci-legend .li b { background: #e5e7eb; color: var(--text-muted); }
+
+  /* Difficulty bars */
+  .diff-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 16px 0 22px;
+  }
+  .diff-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    border-radius: 5px;
+    text-align: center;
+  }
+  .diff-card .lbl { font-size: 11.5px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.4px; }
+  .diff-card .val { font-size: 28px; font-weight: 700; margin: 6px 0; line-height: 1; }
+  .diff-card .pct { font-size: 12px; color: var(--text-secondary); }
+  .diff-card.lv-top { border-top: 3px solid #7c3aed; }
+  .diff-card.lv-h { border-top: 3px solid var(--danger); }
+  .diff-card.lv-m { border-top: 3px solid var(--warning); }
+  .diff-card.lv-l { border-top: 3px solid var(--success); }
+  .diff-card.lv-h .val { color: var(--danger); }
+  .diff-card.lv-m .val { color: var(--warning); }
+  .diff-card.lv-l .val { color: var(--success); }
+  .diff-card.lv-top .val { color: #7c3aed; }
+
+  /* Flow visualization for staff process */
+  .swimlane {
+    margin: 18px 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .swimlane-row { display: grid; grid-template-columns: 210px 1fr; border-bottom: 1px solid var(--border); }
+  .swimlane-row:last-child { border-bottom: 0; }
+  .swimlane-role {
+    background: #f9fafb;
+    padding: 14px 16px;
+    font-weight: 700;
+    font-size: 12.5px;
+    color: var(--text-primary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+  .swimlane-task {
+    padding: 14px 18px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .swimlane-task b { color: var(--text-primary); font-weight: 600; }
+
+  /* Charter style */
+  .charter {
+    background: #fff;
+    border: 1px solid var(--border);
+    padding: 22px 26px;
+    border-radius: 6px;
+    margin: 18px 0;
+  }
+  .charter-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .charter-grid > div {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+  }
+  .charter-grid > div:nth-last-child(-n+2) { border-bottom: 0; }
+  .charter-grid > .l {
+    background: #f9fafb;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-right: 1px solid var(--border);
+  }
+  .charter-grid > .v { color: var(--text-primary); }
+  .charter-grid > .v.muted { color: var(--text-muted); }
+
+  /* Process steps for freelancer */
+  .step-list { margin: 12px 0; }
+  .step-item {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 14px;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid var(--border);
+    margin-bottom: 6px;
+    border-radius: 4px;
+    align-items: start;
+  }
+  .step-num {
+    background: var(--gold);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .step-body { font-size: 12.5px; color: var(--text-secondary); line-height: 1.65; padding-top: 4px; }
+  .step-body b { color: var(--text-primary); font-weight: 600; }
+
+  .info-box {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    border-radius: 0 4px 4px 0;
+  }
+  .info-box.gold {
+    background: #fdf6e3;
+    border-left-color: var(--gold);
+  }
+  .info-box b { color: var(--text-primary); }
+
+  .conclusion {
+    background: #1a1d23;
+    color: #fff;
+    padding: 24px 28px;
+    border-radius: 6px;
+    margin: 24px 0;
+  }
+  .conclusion h3 {
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+  .conclusion p { color: #e5e7eb; font-size: 13.5px; line-height: 1.7; margin-bottom: 10px; }
+  .conclusion p:last-child { margin-bottom: 0; }
+  .conclusion b { color: var(--gold); }
+
+  /* Function spec accordion */
+  .func-block {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .func-head {
+    padding: 12px 16px;
+    background: #f9fafb;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .func-no {
+    background: var(--text-primary);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+  .func-cat { font-size: 11.5px; color: var(--text-muted); }
+  .func-name { font-weight: 700; font-size: 13.5px; color: var(--text-primary); flex: 1; }
+  .func-body { padding: 12px 16px; font-size: 12.5px; color: var(--text-secondary); }
+  .func-desc { margin-bottom: 10px; line-height: 1.7; white-space: pre-line; }
+  .func-questions {
+    background: #fafbfc;
+    padding: 10px 14px;
+    border-left: 3px solid var(--accent);
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    white-space: pre-line;
+    line-height: 1.65;
+  }
+  .func-questions b { color: var(--text-primary); display: block; margin-bottom: 6px; font-size: 12px; }
+  .func-meta {
+    display: flex;
+    gap: 10px;
+    margin: 8px 0 10px;
+    flex-wrap: wrap;
+  }
+  .func-meta .chip {
+    font-size: 11px;
+    background: #f3f4f6;
+    color: var(--text-secondary);
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+  .func-meta .chip.lv-h { background: #fee2e2; color: #991b1b; font-weight: 600; }
+  .func-meta .chip.lv-m { background: #fef3c7; color: #92400e; font-weight: 600; }
+  .func-meta .chip.lv-l { background: #d1fae5; color: #065f46; font-weight: 600; }
+  .func-meta .chip.mobile { background: #dbeafe; color: #1e40af; }
+
+  /* Image embed */
+  .report-image {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+  .image-note {
+    background: var(--info-soft);
+    border-left: 3px solid var(--info);
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* Filter for func list */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0 16px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    border: 1px solid var(--border-strong);
+    background: #fff;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .filter-btn:hover { background: #f9fafb; }
+  .filter-btn.active {
+    background: var(--text-primary);
+    color: #fff;
+    border-color: var(--text-primary);
+  }
+
+  /* responsive */
+  @media (max-width: 1024px) {
+    .lnb { width: 240px; }
+    .main { margin-left: 240px; }
+    .content { padding: 24px 28px 60px; }
+    .kpi-grid, .diag-grid { grid-template-columns: 1fr 1fr; }
+    .diff-grid { grid-template-columns: 1fr 1fr; }
+    .as-tobe { grid-template-columns: 1fr; }
+    .flow-arrow { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ LNB ============ -->
+  <aside class="lnb">
+    <div class="lnb-header">
+      <div class="lnb-brand">Anchors <span class="accent">·</span> PM전략실</div>
+      <div class="lnb-sub">Integrated Document Viewer</div>
+    </div>
+    <nav class="lnb-nav">
+      <div class="lnb-group">PM 전략 · 거버넌스</div>
+      <button class="lnb-item active" data-doc="d-raci">
+        RACI 차트 (프로젝트·조직)
+        <div class="lnb-item-meta">2026 · 37 + 7 프로세스</div>
+      </button>
+
+      <div class="lnb-group">프로젝트 · 인력</div>
+      <button class="lnb-item" data-doc="d-charter">
+        프로젝트 헌장 (P-CODE B008)
+        <div class="lnb-item-meta">프로젝트 샘플</div>
+      </button>
+      <button class="lnb-item" data-doc="d-staff">
+        프로젝트 인력투입 절차
+        <div class="lnb-item-meta">v1.0 · 신규/충원</div>
+      </button>
+      <button class="lnb-item" data-doc="d-freelancer">
+        프리랜서 채용·연장·무상투입
+        <div class="lnb-item-meta">v1.0 · 2024-04-24</div>
+      </button>
+
+      <div class="lnb-group">수주 · 견적</div>
+      <button class="lnb-item" data-doc="d-gepms">
+        고도화 사업 공수산정
+        <div class="lnb-item-meta">v1.0 · 2026-04-28 · 29개 요건</div>
+      </button>
+      <button class="lnb-item" data-doc="d-rfpscope">
+        수행범위 확정 프로세스
+        <div class="lnb-item-meta">RFP 버전관리 · 비즈니스 사고 방지</div>
+      </button>
+
+      <div class="lnb-group">수행 방어 · 변경통제</div>
+      <button class="lnb-item" data-doc="d-confletter">
+        가설 vs 현실 · Confirmation Letter
+        <div class="lnb-item-meta">긴급 변경 접수 프로세스</div>
+      </button>
+      <button class="lnb-item" data-doc="d-defense">
+        주공정 지연 방어 · 의사결정 매트릭스
+        <div class="lnb-item-meta">진단 → 수립 → 실행</div>
+      </button>
+    </nav>
+    <div class="lnb-footer">
+      © 2026 Anchors PM전략실<br>
+      CONFIDENTIAL · 내부 검토용
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">
+        Anchors <span class="sep">/</span> PM전략실 <span class="sep">/</span> <span class="current" id="crumb">RACI 차트 (프로젝트·조직)</span>
+      </div>
+      <div class="topbar-meta">조회일: 2026-05-21</div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===== DOC 3: RACI ===== -->
+      <article class="doc active" id="d-raci">
+        <header class="doc-header">
+          <div class="doc-tag">Responsibility Assignment Matrix</div>
+          <h1 class="doc-title">RACI 차트 — 기능조직별 책임 (2026)</h1>
+          <div class="doc-meta">
+            <span>프로젝트 프로세스 <strong>37개</strong></span>
+            <span>조직운영 프로세스 <strong>7개</strong></span>
+            <span>대상 부서 <strong>6개</strong></span>
+          </div>
+        </header>
+
+        <div class="raci-legend">
+          <span class="lr"><b>R</b>Responsible — 실행</span>
+          <span class="la"><b>A</b>Accountable — 결정·책임</span>
+          <span class="lc"><b>C</b>Consulted — 협의</span>
+          <span class="li"><b>I</b>Informed — 통보</span>
+        </div>
+
+        <h2 class="section">프로젝트 RACI — 핵심 프로세스</h2>
+        <table class="data raci-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;">#</th>
+              <th style="text-align:left;">프로세스명</th>
+              <th>전략컨설팅</th>
+              <th>PM전략실</th>
+              <th>CTO</th>
+              <th>Functional Manager</th>
+              <th>경영지원(PMO)</th>
+              <th>CEO</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>고객으로부터 정보수집</td><td class="role-r center">R</td><td class="role-i center">I</td><td></td><td></td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>2</td><td>RFI, RFQ 접수 및 검토</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-a center">A</td></tr>
+            <tr><td>3</td><td>제안설명회 참석</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-a center">A</td></tr>
+            <tr><td>4</td><td>제안설명회 참석결과 공지 및 참여 여부 결정</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-a center">A</td></tr>
+            <tr><td>5</td><td>PM 배정</td><td class="role-c center">C</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-c center">C</td><td class="role-a center">A</td></tr>
+            <tr><td>6</td><td>제안 전략 수립 및 리딩</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-a center">A</td></tr>
+            <tr><td>7</td><td>제안발표</td><td class="role-c center">C</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>8</td><td>제안발표 피드백 수집 및 배포</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>9</td><td>입찰 모니터링</td><td class="role-r center">R</td><td class="role-c center">C</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>10</td><td>최종 제안 검토</td><td class="role-r center">R</td><td class="role-c center">C</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>11</td><td>Final 견적 작성</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-a center">A</td></tr>
+            <tr><td>12</td><td>투찰 시 아카이빙</td><td class="role-r center">R</td><td class="role-c center">C</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>13</td><td>Final 견적 제출</td><td class="role-r center">R</td><td class="role-c center">C</td><td></td><td></td><td class="role-i center">I</td><td class="role-a center">A</td></tr>
+            <tr><td>14</td><td>계약 전 범위 검증</td><td class="role-c center">C</td><td class="role-r center">R</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>15</td><td>계약 진행</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-a center">A</td><td class="role-i center">I</td></tr>
+            <tr><td>16</td><td>프로젝트 공식 인계</td><td class="role-r center">R</td><td class="role-c center">C</td><td></td><td></td><td></td><td></td></tr>
+            <tr><td>17</td><td>프로젝트 시작 선언 (내부 Kick-Off)</td><td class="role-c center">C</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>18</td><td>프로젝트 팀 구성</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-a center">A</td><td class="role-i center">I</td></tr>
+            <tr><td>19</td><td>프로젝트 인력투입 확정</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-a center">A</td><td class="role-i center">I</td></tr>
+            <tr><td>20</td><td>고객 킥오프 미팅</td><td class="role-c center">C</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-c center">C</td><td class="role-i center">I</td><td></td></tr>
+            <tr><td>21</td><td>프로젝트 실행</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-i center">I</td><td></td><td></td><td></td></tr>
+            <tr><td>22</td><td>프로젝트 요구사항 수집</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-i center">I</td><td></td><td></td></tr>
+            <tr><td>23</td><td>프로젝트 형상관리</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>24</td><td>프로젝트 투입인력 변경</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-a center">A</td><td class="role-i center">I</td></tr>
+            <tr><td>25</td><td>범위 외 추가 요구사항 1차 대응</td><td class="role-c center">C</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>26</td><td>범위 외 추가 요구사항 상담 및 견적</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-a center">A</td></tr>
+            <tr><td>27</td><td>추가요구사항 확정 (계약 내 처리)</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-a center">A</td></tr>
+            <tr><td>28</td><td>추가요구사항 확정 (무상지원 포함)</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-a center">A</td></tr>
+            <tr><td>29</td><td>대금 지급 조건 및 산출물 확인</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-a center">A</td></tr>
+            <tr><td>30</td><td>프로젝트 종료 보고서 작성</td><td class="role-i center">I</td><td class="role-r center">R</td><td></td><td></td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>31</td><td>프로젝트 종료 선언 및 팀원 복귀</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-c center">C</td><td class="role-a center">A</td><td class="role-i center">I</td></tr>
+            <tr><td>32</td><td>고객 피드백 확인 (서면)</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-c center">C</td><td class="role-i center">I</td></tr>
+            <tr><td>33</td><td>프로젝트 리뷰</td><td class="role-c center">C</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>34</td><td>하자 보수 요청 접수</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-a center">A</td></tr>
+            <tr><td>35</td><td>하자 판정 및 결과 공유</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-a center">A</td></tr>
+            <tr><td>36</td><td>하자 보수 담당자 지정 및 결과 회신</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>37</td><td>하자 보수 완료 회신</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+          </tbody>
+        </table>
+
+        <h2 class="section">조직운영 RACI</h2>
+        <table class="data raci-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;">#</th>
+              <th style="text-align:left;">프로세스명</th>
+              <th>전략컨설팅</th>
+              <th>PM Group</th>
+              <th>CTO</th>
+              <th>Functional Manager</th>
+              <th>경영지원(PMO)</th>
+              <th>CEO</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>경영목표 달성을 위한 자산관리</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-a center">A</td></tr>
+            <tr><td>2</td><td>인적자원 채용/교체/퇴직 등 제반사항 담당</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-a center">A</td></tr>
+            <tr><td>3</td><td>물적자원 확보/제공 등 제반사항 담당</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-a center">A</td></tr>
+            <tr><td>4</td><td>IT프로젝트 관리체계 구축</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>5</td><td>프로젝트 본연의 업무 수행을 위한 문서관리</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>6</td><td>프로젝트 산출물 및 선례정보, 교훈지식 관리</td><td class="role-i center">I</td><td class="role-r center">R</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td><td class="role-i center">I</td></tr>
+            <tr><td>7</td><td>프로젝트 협업 및 관리도구 도입</td><td></td><td class="role-r center">R</td><td class="role-c center">C</td><td class="role-c center">C</td><td class="role-i center">I</td><td class="role-a center">A</td></tr>
+          </tbody>
+        </table>
+
+        <h2 class="section">조직 운영 원칙 (메모)</h2>
+        <ul style="font-size:13px; color:var(--text-secondary); line-height:1.9; padding-left:18px;">
+          <li>조직 운영 책임자도 정의하여, 조직 구성원들이 언제 어디와 소통할 수 있는지 이해할 수 있도록 정의가 필요하다.</li>
+          <li>비정규직은 프리랜서 개인보다는 프리랜서 관리업체를 통해 계약하고 투입하게 정책을 수립한다.</li>
+          <li>프리랜서의 계약은 5개월을 넘지 않아야 하며, 5개월 이상의 계약 필요 시 개인의 역량과 생산성을 반드시 판단해야 한다.</li>
+          <li>현재 진행 중인 총 18개 프로젝트 중 6개의 프로젝트에 신규 PM(또는 PMO) 투입 또는 사업관리가 필요하다. 6개 중 3개는 본사직원이, 3개는 외주업체 및 프리랜서가 해당 프로젝트를 전담하고 있다.</li>
+        </ul>
+      </article>
+
+      <!-- ===== DOC 4: 프로젝트 헌장 ===== -->
+      <article class="doc" id="d-charter">
+        <header class="doc-header">
+          <div class="doc-tag">Project Charter</div>
+          <h1 class="doc-title">프로젝트 헌장 : P-CODE B008</h1>
+          <div class="doc-meta">
+            <span>고객사 <strong>제네시스</strong></span>
+            <span>PM <strong>이지섭 책임 (PM그룹)</strong></span>
+            <span>견적번호 <strong>ANCHORS-20240403-01</strong></span>
+          </div>
+        </header>
+
+        <div class="charter">
+          <div class="charter-grid">
+            <div class="l">프로젝트명</div><div class="v">제네시스닷컴, 제네시스 마이페이지 유지보수_24년_개선_앵커스</div>
+            <div class="l">계약건명</div><div class="v">제네시스 신규차량 출시 및 컨셉카 페이지 개발 외</div>
+            <div class="l">계약기간</div><div class="v">2024.05.01 ~ 2025.01.31</div>
+            <div class="l">계약내용</div><div class="v">제네시스닷컴 웹사이트 신규 컨텐츠 제작 (차량 12대)</div>
+            <div class="l">계약금액</div><div class="v">₩0 (VAT 별도, Special DC: ₩0,000,000)</div>
+            <div class="l">계약공수</div><div class="v">72.75 M/M</div>
+            <div class="l">P-CODE</div><div class="v"><b>B008</b></div>
+            <div class="l">프로젝트관리자</div><div class="v">이지섭 책임 (PM그룹)</div>
+            <div class="l">견적일자</div><div class="v">2024-04-03</div>
+          </div>
+        </div>
+
+        <h2 class="section">1. 목적</h2>
+        <ul style="font-size:13px; color:var(--text-secondary); line-height:1.9; padding-left:18px;">
+          <li>사용자 인터랙션을 반영한 몰입감 있고 자연스러운 신차/컨셉카 신규 컨텐츠 및 페이지 기획/디자인</li>
+          <li>사용자 스크롤 흐름 및 USP를 고려한 신규 이미지/영상 제작 (FBX/3Ds MAX 등 3D 데이터를 활용, 영상의 경우 3초 루프 적용)</li>
+          <li>기획/디자인/퍼블/AEM을 연계한 신규 컴포넌트 제작 (제작 기간은 2주 이내)</li>
+        </ul>
+
+        <h2 class="section">2. 범위 (대외비)</h2>
+        <div class="info-box"><b>대외비 정보 생략</b></div>
+
+        <h2 class="section">3. 역할</h2>
+        <p class="lead">범위 과업 목록을 기반으로 신차 & 컨셉카 등의 PIP 2차 개선, AEM 컴포넌트 개발, 그리고 신규 컨텐츠 제작(3D, 영상, 이미지) 등의 작업을 완수하기 위한 역할(반복)을 수행합니다.</p>
+
+        <h2 class="section">4. 업무 시작 일자</h2>
+        <p class="lead"><b>2024.05.02 (목)</b></p>
+
+        <h2 class="section">5. 근무 장소</h2>
+        <p class="lead">개발인력 이광진 수석, 송화연 선임은 <b>원효로 상주(필수)</b>, 이외 인력들은 비상주 또는 부분상주</p>
+
+        <h2 class="section">6. 제약 및 위험</h2>
+        <ul style="font-size:13px; color:var(--text-secondary); line-height:1.9; padding-left:18px;">
+          <li>"기존 웹사이트 운영 기획"의 아이파트너스, "기존 웹사이트/마이페이지 운영 기획"의 노스스타 컨설팅과 협업하는 작업환경 조성 및 신뢰할 수 있는 의식과 의사소통 채널을 구축하는 PM의 주요 과제가 있습니다.</li>
+          <li>긴 스크롤과 컨텐츠 탐색 흐름의 긴 느낌들을 배제하고, 보다 향상된 임팩트의 컨텐츠/레이아웃/스토리텔링 전환이 필요하다는 고객 요건을 만족시키기 위한 전략적 방향성이 대단히 중요합니다.</li>
+        </ul>
+
+        <h2 class="section">7. 납품대금 결제방법 및 지급시기</h2>
+        <p class="lead">납품대금 결제방법과 기성 지급시기는 전략컨설팅실과 확인 후 별도 안내 (<b>예정</b>)</p>
+
+        <h2 class="section">8. 특이사항</h2>
+        <ul style="font-size:13px; color:var(--text-secondary); line-height:1.9; padding-left:18px;">
+          <li>본 사업의 내용은 14~15개의 PIP 제작 건이지만, 금번 사업을 성공적으로 완수하여, 하반기 혹은 25년에 <b>제네시스.com 통합 운영 (MYpage 제외)</b>을 가져오는 추진 전략을 수행 예정입니다.</li>
+          <li>PIP에 사용되는 3D 에셋(fbx 원본)의 리토폴로지나 WebGL 작업을 별건 견적으로 진행할 수도 있습니다.</li>
+        </ul>
+      </article>
+
+      <!-- ===== DOC 5: 인력투입 절차 ===== -->
+      <article class="doc" id="d-staff">
+        <header class="doc-header">
+          <div class="doc-tag">Staffing Process v1.0</div>
+          <h1 class="doc-title">프로젝트 인력투입 절차 — 앵커스 인력채용 절차 (신규/충원)</h1>
+          <div class="doc-meta">
+            <span>대상 <strong>PM · PL · 기능조직리더 · 경영지원실</strong></span>
+            <span>버전 <strong>v1.0</strong></span>
+          </div>
+        </header>
+
+        <div class="info-box gold">
+          프로젝트 투입에 필요한 인력의 <b>직무적합성은 PM, PL 분들이 1차적으로 부합하는 정도를 판단</b>해야 합니다.<br>
+          지원자의 성향과 인성, 역량 등이 해당 프로젝트에 적합한지 판단하는 과정에서 도움이 필요한 경우에는 <b>기능조직 리더 분들이 적극 지원</b>합니다.
+        </div>
+
+        <h2 class="section">단계별 책임 및 활동</h2>
+        <div class="swimlane">
+          <div class="swimlane-row">
+            <div class="swimlane-role">PM (또는 PM전략실)<br><small style="font-weight:400; color:var(--text-muted)">→ 기능조직리더</small></div>
+            <div class="swimlane-task">프로젝트에 <b>신규 투입 또는 인력 손실이 발생</b>한 경우, 해당 직무 군의 기능조직리더에게 인력 구인을 요청합니다 (클릭업 인력 구인/투입 요청).</div>
+          </div>
+          <div class="swimlane-row">
+            <div class="swimlane-role">기능조직리더</div>
+            <div class="swimlane-task"><b>적합한 내부 자원이 있는지 검토</b>합니다. 만약 적합한 자원이 없는 경우, 직무 군에 맞는 인력채용을 시작합니다.</div>
+          </div>
+          <div class="swimlane-row">
+            <div class="swimlane-role">기능조직리더<br><small style="font-weight:400; color:var(--text-muted)">→ 경영지원실</small></div>
+            <div class="swimlane-task">PM의 요청 정보를 기반으로 <b>경영지원실에 후보자 구인을 요청</b>합니다. 이후 적합한 인력 채용을 위한 각 단계를 적극 지원합니다.</div>
+          </div>
+          <div class="swimlane-row">
+            <div class="swimlane-role">경영지원실<br><small style="font-weight:400; color:var(--text-muted)">→ PM (또는 PM전략실)</small></div>
+            <div class="swimlane-task">경영지원실에서 제공받은 <b>후보자의 프로필을 검토하고 인터뷰를 진행</b>합니다. 채용에 어려움이 있는 경우, 대안 모색을 위한 협의를 기능조직 리더에게 요청합니다.</div>
+          </div>
+          <div class="swimlane-row">
+            <div class="swimlane-role">PM → 기능조직리더</div>
+            <div class="swimlane-task">직무적합성을 갖춘 적절한 후보자에 대해 <b>채용을 요청</b>합니다.</div>
+          </div>
+          <div class="swimlane-row">
+            <div class="swimlane-role">기능조직리더<br><small style="font-weight:400; color:var(--text-muted)">→ 경영지원실</small></div>
+            <div class="swimlane-task">경영지원실과 함께 <b>PM이 요청한 후보자의 채용 절차를 진행</b>합니다.</div>
+          </div>
+          <div class="swimlane-row">
+            <div class="swimlane-role">CEO</div>
+            <div class="swimlane-task"><b>후보자 채용 결정</b> · 최종 승인 권한.</div>
+          </div>
+        </div>
+
+        <h2 class="section">프로세스 흐름 — 7단계</h2>
+        <div class="ladder">
+          <div class="ladder-step"><b>STEP 1</b> 인력구인 요청 (PM → 기능조직리더)</div>
+          <div class="ladder-arrow">↓</div>
+          <div class="ladder-step"><b>STEP 2</b> 투입가능 인력 검토 (기능조직리더)</div>
+          <div class="ladder-arrow">↓</div>
+          <div class="ladder-step"><b>STEP 3</b> 인력채용 요청 (기능조직리더 → 경영지원실)</div>
+          <div class="ladder-arrow">↓</div>
+          <div class="ladder-step"><b>STEP 4</b> 후보자 검토 및 인터뷰 (경영지원실 → PM)</div>
+          <div class="ladder-arrow">↓</div>
+          <div class="ladder-step"><b>STEP 5</b> 후보자 채용 결정 (CEO)</div>
+          <div class="ladder-arrow">↓</div>
+          <div class="ladder-step"><b>STEP 6</b> 채용 실시 (경영지원실)</div>
+        </div>
+
+        <p class="lead" style="text-align:right; color:var(--text-muted); font-size:11.5px; margin-top:14px;">We Build VALUE for your business</p>
+      </article>
+
+      <!-- ===== DOC 6: 프리랜서 처리절차 ===== -->
+      <article class="doc" id="d-freelancer">
+        <header class="doc-header">
+          <div class="doc-tag">Freelancer Process v1.1</div>
+          <h1 class="doc-title">Anchors 프리랜서 신규채용 · 계약연장 · 무상투입 절차</h1>
+          <div class="doc-meta">
+            <span>버전 <strong>v1.0</strong></span>
+            <span>최종 개정 <strong>2024-04-24</strong></span>
+            <span>작성자 <strong>PM전략실장</strong></span>
+          </div>
+        </header>
+
+        <h2 class="section">문서 이력</h2>
+        <table class="data">
+          <thead><tr><th>버전</th><th>동작</th><th>설명</th><th>작성일자</th><th>작성자</th></tr></thead>
+          <tbody>
+            <tr><td>0.9</td><td>제정</td><td>최초 작성</td><td>2024-03-26</td><td>최문봉 책임</td></tr>
+            <tr><td>1.0</td><td>변경</td><td>"투입공수(M/M)가 없는 경우" 절차 보강</td><td>2024-03-26</td><td>PM전략실장</td></tr>
+            <tr><td>1.1</td><td>변경</td><td>"Anchors_프로젝트명_업무명_신규투입(무상)_요청의_건" 개선양식 첨부 변경</td><td>2024-04-24</td><td>PM전략실장</td></tr>
+          </tbody>
+        </table>
+
+        <h2 class="section">1. 투입공수(M/M)가 있는 경우</h2>
+
+        <h3 class="subsec">1.1 프리랜서 신규 채용</h3>
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-body"><b>필요한 정보를 작성 후, 해당 직군의 팀장에게 채용을 요청한다.</b><br>
+            ① 직무 (기획 PA, 기획 PL, 개발 PA 등) · ② 등급 (초급/중급/고급/특급) · ③ 프로젝트명 · ④ 인터뷰어(필요 시) · ⑤ 계약 시작일 (기본 5개월 단위) · ⑥ 계약 종료일 · ⑦ 근무 예정지 · ⑧ 요청 사항 · ⑨ 투입공수(M/M) 유무
+            <div class="info-box" style="margin-top:10px;">
+              <b>등급 기준 (4년제 대졸 기준)</b><br>
+              • 초급: 6년차 미만 · 중급: 6~8년차 · 고급: 9~11년차 · 특급: 12년 이상
+            </div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-body"><b>채용 요청을 수신한 해당 직군의 팀장과 경영지원실은 구인절차를 진행</b>한다.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-body"><b>경영지원실은 채용을 요청한 PM에게 인터뷰 후보자 프로필을 제공</b>한다.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">4</div>
+            <div class="step-body"><b>해당 PM은 후보자 중 인터뷰 대상자를 선정</b>하여, 경영지원실로 회신한다. (인터뷰 장소 및 일시 협의 필요)</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">5</div>
+            <div class="step-body"><b>경영지원실은 인터뷰 대상자와 협의하여, 확정된 면접일시를 해당 PM에게 안내</b>한다.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">6</div>
+            <div class="step-body"><b>해당 PM은 인터뷰 진행 후, 면접결과 및 채용여부를 경영지원실로 회신</b>한다. 합격자에 한해, 프리랜서 계약을 체결한다.</div>
+          </div>
+        </div>
+
+        <h3 class="subsec">1.2 프리랜서 계약 연장</h3>
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-body"><b>해당 직군의 팀장에게 계약 연장 요청 (끝).</b></div>
+        </div>
+
+        <h2 class="section">2. 투입공수(M/M)가 없는 경우</h2>
+
+        <h3 class="subsec">2.1 프리랜서 신규 채용</h3>
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-body"><b>무상 투입이 필요한 프로젝트의 PM이 기안서를 수기 작성</b>하여 (양식: <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px;font-size:11px;">Anchors_프로젝트명_업무명_신규투입(무상)_요청의_건</code>), 소속 팀장 및 경영진의 결재를 득하고, 경영지원실에 해당 서류를 제출한다.<br><br>
+            <em style="color:var(--text-muted)">시간과 공간의 제약(파견 등)으로 직접 승인을 득할 수 없다면, 소속팀장 또는 PM전략실장에게 대리자의 역할 지원을 요청한다.</em></div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-body"><b>부재 등의 사유로 팀장, 전무이사, 대표이사 결재를 득할 수 없는 경우</b>, 대표이사가 구두 승인한 대결자에게 승인을 득하도록 이후 절차를 진행한다. <b>대표이사의 구두 승인은 결재자 중 1인 또는 PM전략실장에게 요청</b>하여야 처리하도록 한다.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-body"><b>"1. 투입공수(M/M)가 있는 경우"의 프리랜서 신규 채용과 동일한 절차</b>를 진행한다.</div>
+          </div>
+        </div>
+
+        <h3 class="subsec">2.2 기존인력 무상투입</h3>
+        <p class="lead">"2.1 프리랜서 신규 채용 절차"의 단계 1과 동일한 절차를 진행하여, <b>무상 투입에 대한 기안 승인을 득</b>한다.</p>
+
+        <h2 class="section">3. 무상투입 기안 승인 목적 (참고)</h2>
+        <div class="diag-grid">
+          <div class="diag-card">
+            <div class="diag-num">①</div>
+            <div class="diag-title">투입 계획 공식화</div>
+            <div class="diag-body">추가 투입 계획 세부(안)을 확정하여 공식적으로 연관 부서에 협조 요청하기 (혼선 방지)</div>
+          </div>
+          <div class="diag-card">
+            <div class="diag-num">②</div>
+            <div class="diag-title">수익률 차이 판별</div>
+            <div class="diag-body">계획 수익률 대비 실제 수익률 차이 판별하기 (최문봉 책임이 관리하는 프로젝트 수익률 표에 반영)</div>
+          </div>
+          <div class="diag-card">
+            <div class="diag-num">③</div>
+            <div class="diag-title">매출 여부 판별</div>
+            <div class="diag-body">팀별 매출표 작성 시 매출 여부 판별하기 (팀 목표와 연결)</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- ===== DOC 7: GePMS 공수산정 ===== -->
+      <article class="doc" id="d-gepms">
+        <header class="doc-header">
+          <div class="doc-tag">Requirements & Effort Estimation</div>
+          <h1 class="doc-title">2026년 고도화 사업 — 상세요구사항 & 공수산정</h1>
+          <div class="doc-meta">
+            <span>버전 <strong>v1.0</strong></span>
+            <span>작성일 <strong>2026-04-28</strong></span>
+            <span>작성자 <strong>PM전략실장</strong></span>
+            <span>요청팀 <strong>솔루션팀 · 품질안전팀</strong></span>
+          </div>
+        </header>
+
+        <h2 class="section">난이도 종합 판정</h2>
+        <div class="diff-grid">
+          <div class="diff-card lv-top"><div class="lbl">최상</div><div class="val">0</div><div class="pct">0%</div></div>
+          <div class="diff-card lv-h"><div class="lbl">상</div><div class="val">15</div><div class="pct">51.7%</div></div>
+          <div class="diff-card lv-m"><div class="lbl">중</div><div class="val">12</div><div class="pct">41.4%</div></div>
+          <div class="diff-card lv-l"><div class="lbl">하</div><div class="val">2</div><div class="pct">6.9%</div></div>
+        </div>
+
+        <div class="info-box gold">
+          <b>핵심 관점</b><br>
+          ① 최상 0건 이유 — 개별 항목에는 외부 연동·보안·플랫폼 제약 등 복합 리스크가 존재하나, 각 항목이 기존 시스템 고도화 범위 안에 있어 완전한 신규 아키텍처 구축(최상 요건)에는 해당하지 않음. 단, <b>No.12(HRM) + No.23(PUSH) + No.13(비정기 발행) 복수 항목 동시 개발 시 프로젝트 전체 난이도 최상으로 상향 검토 필요</b>.<br><br>
+          ② 핵심 리스크 — 전체 29개 항목 중 <b>'요구사항 미확정'이 난이도 상향의 핵심 원인(21건)</b>. 이는 '프로젝트 관리 관점 위험'이 전반에 걸쳐 구조적으로 존재함을 의미함.<br><br>
+          ③ 우선 해소 필요 항목 — <b>No.12(HRM 연동방식), No.13(장비이력카드 구조), No.24(위험성평가표 양식), No.28(리포트 신규 양식)</b> → 설계 착수 전 반드시 확정 필요. 미확정 상태로 개발 착수 시 재작업 비용 최고 수준 발생 예상.
+        </div>
+
+        <h3 class="subsec">고급 이상 직무자 다수 투입 권고</h3>
+        <table class="data">
+          <thead><tr><th>난이도</th><th class="num">항목 수</th><th>권고 투입 인력</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill danger">상</span></td><td class="num">15건</td><td>고급 이상 직무자 주도, 특급 검토 포함 권장</td></tr>
+            <tr><td><span class="pill warn">중</span></td><td class="num">12건</td><td>중급 이상 개발자 주도</td></tr>
+            <tr><td><span class="pill ok">하</span></td><td class="num">2건</td><td>초급 개발자 수행 가능 (중급 검토 권장)</td></tr>
+          </tbody>
+        </table>
+
+        <h3 class="subsec">난이도 판정 원칙</h3>
+        <ol style="font-size:13px; color:var(--text-secondary); line-height:1.9; padding-left:22px;">
+          <li>복수 항목 동시 개발 시 <b>가장 높은 난이도 기준 적용</b> (Decide_Project_size_as_Complexity 원칙)</li>
+          <li>재사용 가능 모듈·템플릿 확보 시 <b>1단계 하향 검토 가능</b></li>
+          <li>요구사항 확정 수준 향상 시 <b>상→중 하향 조정 여지</b> 있음</li>
+        </ol>
+
+        <h2 class="section">메뉴별 요구사항 상세 (29건)</h2>
+        <div class="filter-bar">
+          <button class="filter-btn active" data-filter="all">전체 (29)</button>
+          <button class="filter-btn" data-filter="상">난이도 상 (15)</button>
+          <button class="filter-btn" data-filter="중">난이도 중 (12)</button>
+          <button class="filter-btn" data-filter="하">난이도 하 (2)</button>
+          <button class="filter-btn" data-filter="mobile">모바일 (16)</button>
+        </div>
+
+        <div id="func-list">
+          <!-- function blocks generated below -->
+        </div>
+
+        <h2 class="section">참고 · 난이도 분류 기준</h2>
+        <table class="data">
+          <thead>
+            <tr><th>기준 항목</th><th>최상</th><th>상</th><th>중</th><th>하</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>고위험 관점영역 수</td><td>5개 이상</td><td>3~4개</td><td>1~2개</td><td>0개</td></tr>
+            <tr><td>요구사항 확정도</td><td>미확정 (이해관계자 불일치)</td><td>핵심 항목 미확정 (스펙·양식 미공유)</td><td>주요 항목 확정 (세부 스펙 일부 미정)</td><td>완전 확정 (산출물 공유 완료)</td></tr>
+            <tr><td>외부 연동 복잡도</td><td>3개↑ + OAuth2/SSO/SAML</td><td>1~2개 + 토큰 인증·재시도</td><td>단순 REST GET/POST 또는 없음</td><td>없음</td></tr>
+            <tr><td>도메인 규칙 복잡도</td><td>다중 트랜잭션·동시성·분산 캐시</td><td>복합 조건·다중 워크플로우 분기</td><td>기본 CRUD + 검증/예외처리</td><td>단순 생성/조회/수정/삭제</td></tr>
+            <tr><td>보안·컴플라이언스</td><td>GDPR·PII 암호화·ABAC 권한</td><td>JWT·세션 관리·RBAC</td><td>기본 입력 검증</td><td>내부용·별도 보안 요건 없음</td></tr>
+            <tr><td>신기술 사용</td><td>미검증 신기술 또는 플랫폼 혼합</td><td>팀 내 경험 부족 기술 스택</td><td>팀 다수가 경험 보유</td><td>팀 전원 숙련</td></tr>
+            <tr><td>재사용률</td><td>0% (신규 설계 100%)</td><td>~60% (부분 수정 필요)</td><td>60~80% (기존 패턴 활용)</td><td>100% (기존 모듈 그대로 적용)</td></tr>
+          </tbody>
+        </table>
+
+        <h2 class="section">참고 · 재사용률 인정 상한 조정</h2>
+        <table class="data">
+          <thead><tr><th>재사용 유형</th><th>재사용률</th><th>복잡도 상승 시</th><th>의미</th></tr></thead>
+          <tbody>
+            <tr><td>낮음</td><td class="num">1.0</td><td class="num">1.0 (고정)</td><td>사실상 재개발 — 인정 상한 1.0 고정 원칙</td></tr>
+            <tr><td>보통</td><td class="num">0.8</td><td class="num">+0.12 → 0.92</td><td>부분 재사용 — 통합·검증 부대공수 반영</td></tr>
+            <tr><td>높음</td><td class="num">0.6</td><td class="num">+0.18 → 0.78</td><td>구조 유지, 로직 재활용 — 검증 부대공수 큼</td></tr>
+            <tr><td>매우높음</td><td class="num">0.3</td><td class="num">+0.21 → 0.51</td><td>UI·인터페이스 전환 수준 — 전수 검사 필요</td></tr>
+          </tbody>
+        </table>
+        <div class="info-box">
+          <b>핵심 요약</b> — 재사용률 인정 상한을 복잡도에 따라 차등 적용하는 것은 재사용에 수반되는 <b>숨겨진 공수를 가시화</b>하여 프로젝트 원가를 투명하게 만드는 장치입니다. 인정 상한을 복잡도와 무관하게 일률적으로 낮게 고정하면, 수행사는 검증·통합·보안 적합성 공수를 다른 항목에 전가하거나 해당 작업을 축소 수행하며, 그 결과는 납품 후 장애, 보안 취약점, 성능 미달로 귀결됩니다.
+        </div>
+
+        <h2 class="section">참고 · 기능별 직무 MD 기준 (Web)</h2>
+        <table class="data">
+          <thead>
+            <tr><th rowspan="2">개발항목</th><th colspan="3">한국생산성협회 (MD)</th><th colspan="3">난이도 PM의견 (MD)</th><th rowspan="2">설명</th></tr>
+            <tr><th>하</th><th>중</th><th>상</th><th>하</th><th>중</th><th>상</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>CRUD</td><td class="num">1.7</td><td class="num">2.6</td><td class="num">3.4</td><td class="num">2.5</td><td class="num">3</td><td class="num">4.5</td><td>데이터 생성·조회·수정·삭제</td></tr>
+            <tr><td>UI 화면</td><td class="num">2.9</td><td class="num">4.6</td><td class="num">5.7</td><td class="num">4</td><td class="num">6</td><td class="num">8</td><td>사용자 인터페이스 화면 구현</td></tr>
+            <tr><td>API 연동</td><td class="num">2.3</td><td class="num">3.4</td><td class="num">4.6</td><td class="num">4</td><td class="num">6</td><td class="num">8</td><td>외부 시스템과 데이터 교환</td></tr>
+            <tr><td>파일 업로드/다운</td><td class="num">2.3</td><td class="num">3.4</td><td class="num">4.6</td><td class="num">4</td><td class="num">6</td><td class="num">8</td><td>첨부파일 처리 기능</td></tr>
+            <tr><td>검색/필터링</td><td class="num">2.3</td><td class="num">3.4</td><td class="num">4.6</td><td class="num">4</td><td class="num">6</td><td class="num">8</td><td>조건 기반 데이터 조회</td></tr>
+            <tr><td>페이징 처리</td><td class="num">1.4</td><td class="num">2</td><td class="num">2.6</td><td class="num">2.5</td><td class="num">3.5</td><td class="num">4.5</td><td>대량 데이터 페이지 분할</td></tr>
+            <tr><td>데이터 시각화</td><td class="num">3.4</td><td class="num">5.1</td><td class="num">6.8</td><td class="num">6</td><td class="num">9</td><td class="num">12</td><td>차트·그래프 시각화</td></tr>
+            <tr><td>배치 처리</td><td class="num">4.6</td><td class="num">6.8</td><td class="num">9.1</td><td class="num">8</td><td class="num">12</td><td class="num">16</td><td>대량 데이터 처리 작업</td></tr>
+            <tr><td>알림/Push/메일</td><td class="num">2.3</td><td class="num">3.4</td><td class="num">4.6</td><td class="num">4</td><td class="num">6</td><td class="num">8</td><td>사용자 알림 기능</td></tr>
+            <tr><td>보안 기능</td><td class="num">4.6</td><td class="num">6.8</td><td class="num">9.1</td><td class="num">8</td><td class="num">12</td><td class="num">16</td><td>인증·암호화·취약점 방어</td></tr>
+            <tr><td>다국어 지원</td><td class="num">2.3</td><td class="num">3.4</td><td class="num">4.6</td><td class="num">4</td><td class="num">6</td><td class="num">8</td><td>다국어 UI 및 데이터 처리</td></tr>
+            <tr><td>인증</td><td class="num">4.6</td><td class="num">6.8</td><td class="num">9.1</td><td class="num">8</td><td class="num">12</td><td class="num">16</td><td>로그인·세션·토큰 관리</td></tr>
+            <tr><td>권한 관리</td><td class="num">4.6</td><td class="num">6.8</td><td class="num">9.1</td><td class="num">8</td><td class="num">12</td><td class="num">16</td><td>사용자 권한·접근 제어</td></tr>
+          </tbody>
+        </table>
+
+        <h2 class="section">참고 · 기능별 직무 MD 기준 (모바일)</h2>
+        <table class="data">
+          <thead>
+            <tr><th rowspan="2">개발항목</th><th colspan="3">한국생산성협회 (MD)</th><th colspan="3">난이도 PM의견 (MD)</th></tr>
+            <tr><th>하</th><th>중</th><th>상</th><th>하</th><th>중</th><th>상</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>푸시알림</td><td class="num">1.7</td><td class="num">2.9</td><td class="num">4.6</td><td class="num">3</td><td class="num">5</td><td class="num">8</td></tr>
+            <tr><td>오프라인 모드 / 데이터 동기화</td><td class="num">3.4</td><td class="num">5.7</td><td class="num">8</td><td class="num">6</td><td class="num">10</td><td class="num">14</td></tr>
+            <tr><td>네이티브 기능 연동 (GPS·카메라·센서·생체)</td><td class="num">4.6</td><td class="num">8.6</td><td class="num">11.4</td><td class="num">8</td><td class="num">15</td><td class="num">20</td></tr>
+            <tr><td>앱스토어 배포 및 인증</td><td class="num">2.3</td><td class="num">3.4</td><td class="num">5.1</td><td class="num">4</td><td class="num">6</td><td class="num">9</td></tr>
+            <tr><td>UI/UX 특화 (커스텀 디자인·애니메이션)</td><td class="num">3.4</td><td class="num">6.8</td><td class="num">10.3</td><td class="num">6</td><td class="num">12</td><td class="num">18</td></tr>
+            <tr><td>다중 플랫폼 (iOS+Android, 크로스플랫폼)</td><td class="num">5.7</td><td class="num">10.3</td><td class="num">14.3</td><td class="num">10</td><td class="num">18</td><td class="num">25</td></tr>
+            <tr><td>성능 최적화 (메모리·배터리 관리)</td><td class="num">4.6</td><td class="num">8.6</td><td class="num">12.5</td><td class="num">8</td><td class="num">15</td><td class="num">22</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <!-- ===== DOC 8: 수행범위 확정 프로세스 ===== -->
+      <article class="doc" id="d-rfpscope">
+        <header class="doc-header">
+          <div class="doc-tag">Scope Confirmation Process (안)</div>
+          <h1 class="doc-title">수행범위 확정 프로세스</h1>
+          <div class="doc-meta">
+            <span>유형 <strong>수주 단계 방어 절차</strong></span>
+            <span>주관 <strong>전략컨설팅실</strong></span>
+            <span>적용 <strong>입찰 모니터링 ~ 공식 인계</strong></span>
+          </div>
+        </header>
+
+        <p class="lead">이 프로세스의 핵심은 <b>착수 시점의 수행범위가 공식 배포된 과업지시서와 다른 '비즈니스 사고'를 방지</b>하는 것입니다. 입찰 단계부터 RFP 버전을 추적·아카이빙하고, 계약 체결 직전 PM이 수행범위를 재검증한 뒤 영업↔PM 간 공식 인계를 수행합니다.</p>
+
+        <h2 class="section">SECTION 1 — RFP 버전관리 및 수행범위 확정 (안)</h2>
+        <p class="lead">입찰 모니터링부터 공식 인계까지 5단계. <b>4단계 "계약 전 범위 검증"만 PM이 책임자(R)</b>가 되고, 나머지 단계는 전략컨설팅실이 주관합니다.</p>
+
+        <table class="data raci-table" style="font-size:12.5px;">
+          <thead>
+            <tr>
+              <th style="text-align:left; width:18%; padding:11px 14px;">단계</th>
+              <th style="text-align:left; width:50%; padding:11px 14px;">주요 활동 (Activity)</th>
+              <th style="width:16%;">책임자 (R)</th>
+              <th style="width:16%;">협조 (C)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:13px 14px;"><b>1. 입찰 모니터링</b></td>
+              <td style="padding:13px 14px;">입찰 마감 전까지 RFP / 공지사항 / Q&amp;A 모니터링</td>
+              <td class="role-r" style="text-align:center; font-weight:700;">전략컨설팅실</td>
+              <td class="role-c" style="text-align:center;">–</td>
+            </tr>
+            <tr>
+              <td style="padding:13px 14px;"><b>2. 최종 제안 검토</b></td>
+              <td style="padding:13px 14px;">시스템상 최종 RFP 버전과 제안서 범위 대조</td>
+              <td class="role-r" style="text-align:center; font-weight:700;">전략컨설팅실</td>
+              <td class="role-c" style="text-align:center; font-weight:600;">PM</td>
+            </tr>
+            <tr>
+              <td style="padding:13px 14px;"><b>3. 투찰 시 아카이빙</b></td>
+              <td style="padding:13px 14px;">최종 투찰 시점에 입찰시스템 스크린샷을 RFP/제안서와 함께 아카이빙</td>
+              <td class="role-r" style="text-align:center; font-weight:700;">전략컨설팅실</td>
+              <td class="role-c" style="text-align:center; font-weight:600;">PM</td>
+            </tr>
+            <tr style="background:#fffbeb;">
+              <td style="padding:13px 14px;"><b>4. 계약 전 범위 검증</b></td>
+              <td style="padding:13px 14px;">낙찰 후 계약 체결 전, 입찰시스템 최종 RFP와 수행범위 재 검증</td>
+              <td class="role-r" style="text-align:center; font-weight:700;">PM</td>
+              <td class="role-c" style="text-align:center; font-weight:600;">전략컨설팅실</td>
+            </tr>
+            <tr>
+              <td style="padding:13px 14px;"><b>5. 공식 인계</b></td>
+              <td style="padding:13px 14px;">영업 ↔ PM 간 수행범위 최종 확인</td>
+              <td class="role-r" style="text-align:center; font-weight:700;">전략컨설팅실</td>
+              <td class="role-c" style="text-align:center; font-weight:600;">PM</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="scope-warning">
+          <b>범위 차이가 발견될 경우</b>, 리스크 보고 체계에 따라 <b>전사 차원의 의사결정</b><span class="muted-paren">(추가 예산 확보 등)</span> <b>절차를 선행한 뒤 계약을 체결합니다.</b>
+        </div>
+
+        <h2 class="section">SECTION 2 — 수행범위 확정 체크리스트 (안)</h2>
+        <p class="lead">5단계 프로세스의 모든 단계를 완료한 뒤, 계약 체결 직전 다음 3가지 산출물을 반드시 확인합니다.</p>
+
+        <div class="scope-checklist">
+          <div class="scope-check-item">
+            <div class="scope-check-box"></div>
+            <div class="scope-check-body">
+              <b>최종 RFP 원본:</b> 입찰 시스템에서 다운로드한 최종 버전인가? (업데이트 일자 확인)
+            </div>
+          </div>
+          <div class="scope-check-item">
+            <div class="scope-check-box"></div>
+            <div class="scope-check-body">
+              <b>최종 투찰 제안서:</b> RFP의 요구사항을 100% 반영했는가?
+            </div>
+          </div>
+          <div class="scope-check-item">
+            <div class="scope-check-box"></div>
+            <div class="scope-check-body">
+              <b>수행범위 Gap 리포트:</b> RFP 요구사항과 제안 범위 간 미매칭 항목의 대응 방안
+            </div>
+          </div>
+        </div>
+
+        <h2 class="section">SECTION 3 — 운영 원칙</h2>
+        <ul style="font-size:13px; line-height:1.85; color:var(--text-secondary); margin-left:18px;">
+          <li><b>버전 추적 의무</b> — 입찰 시스템상 RFP 버전이 변경될 때마다 변경 이력을 기록하고 영향도 검토</li>
+          <li><b>아카이빙 표준</b> — 투찰 시점 스크린샷(시스템 시각·문서 버전 포함)·RFP·제안서·Q&amp;A를 단일 폴더에 보관 (`/01_bid_archive/PJT명/`)</li>
+          <li><b>계약 전 PM 검증 필수</b> — 4단계 PM 재검증 없이 계약 체결 불가. 검증 결과를 공식 메일로 영업·PM전략실에 회신</li>
+          <li><b>Gap 리포트 작성 기준</b> — 미매칭 항목이 1건이라도 발견되면 작성. "없음"이라도 명시적으로 기록</li>
+          <li><b>전사 의사결정 트리거</b> — Gap이 추가 공수 0.5 M/M 또는 추가 예산 1천만원 이상으로 평가되면 <b>전사 차원 의사결정 절차 선행</b></li>
+          <li><b>영업↔PM 공식 인계</b> — 인계 회의 시 직전 작업의 <b>이해관계자 그리드 맵(멘델로우 매트릭스)</b>도 함께 전달</li>
+        </ul>
+      </article>
+
+      <!-- ===== DOC 9: 가설 vs 현실 · Confirmation Letter ===== -->
+      <article class="doc" id="d-confletter">
+        <header class="doc-header">
+          <div class="doc-tag">Defensive Process · Change Control</div>
+          <h1 class="doc-title">가설 vs 현실 · Confirmation Letter 발송 프로세스</h1>
+          <div class="doc-meta">
+            <span>유형 <strong>변경통제 절차</strong></span>
+            <span>주관 <strong>PM</strong></span>
+            <span>발송 트리거 <strong>가설-현실 간극 발견 시</strong></span>
+          </div>
+        </header>
+
+        <p class="lead">계약 수주 시 작성한 <b>전제 가설(요구사항·범위·일정·자원)</b>과 수행 중 마주하는 <b>현실</b> 사이에 발생하는 모든 간극을 정기적으로 대조하고, 간극이 확인되는 즉시 <b>Confirmation Letter</b>를 발송하여 책임 소재와 영향 분석 의무를 공식화하는 프로세스입니다.</p>
+
+        <h2 class="section">SECTION 1 — '가설 vs 현실' 대조표 운영</h2>
+        <p class="lead">계약서·제안서·요구사항정의서에 명시된 전제(가설)와 현재 수행 상황(현실)을 컬럼으로 나란히 배치하여 간극을 가시화합니다. PM이 <b>주 1회 갱신</b>하고, 간극 발견 항목은 즉시 변경통제 프로세스로 이관합니다.</p>
+
+        <p style="font-size:12.5px; color:var(--text-secondary); margin:14px 0 6px;"><b>대조표 (예시)</b> — 항목별로 가설과 현실을 정렬해 간극을 한눈에 식별</p>
+
+        <table class="gap-table">
+          <thead>
+            <tr>
+              <th style="width:14%">항목</th>
+              <th style="width:33%">가설 (계약 기준)</th>
+              <th style="width:33%">현실 (수행 시점)</th>
+              <th style="width:10%">상태</th>
+              <th style="width:10%">조치</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>요구사항 범위</b></td>
+              <td class="col-hyp">RFP에 정의된 12개 핵심 기능</td>
+              <td class="col-real">현업이 신규 기능 3건 추가 요청 (예: 권한 관리, 대시보드 위젯)</td>
+              <td><span class="gap-badge gap">간극</span></td>
+              <td>Confirmation Letter 발송</td>
+            </tr>
+            <tr>
+              <td><b>의사결정 속도</b></td>
+              <td class="col-hyp">고객 의사결정 평균 3영업일 이내</td>
+              <td class="col-real">검토·승인 평균 7영업일 (1주일 지연 누적)</td>
+              <td><span class="gap-badge gap">간극</span></td>
+              <td>Confirmation Letter 발송</td>
+            </tr>
+            <tr>
+              <td><b>고객 협조 인력</b></td>
+              <td class="col-hyp">고객 PM 1명 · 현업 SME 2명 상주</td>
+              <td class="col-real">고객 PM은 타 PJT 겸직, SME 1명은 휴직</td>
+              <td><span class="gap-badge gap">간극</span></td>
+              <td>Confirmation Letter 발송</td>
+            </tr>
+            <tr>
+              <td><b>제공 자료</b></td>
+              <td class="col-hyp">기존 시스템 명세서·DB 스키마 착수 시 제공</td>
+              <td class="col-real">착수 후 3주째 미제공 — 분석 진행 불가</td>
+              <td><span class="gap-badge gap">간극</span></td>
+              <td>Confirmation Letter 발송</td>
+            </tr>
+            <tr>
+              <td><b>외부 시스템 연동</b></td>
+              <td class="col-hyp">3rd-party API 정상 제공</td>
+              <td class="col-real">제공 완료, 명세 일치</td>
+              <td><span class="gap-badge ok">일치</span></td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><b>승인 절차</b></td>
+              <td class="col-hyp">월 1회 운영위 승인</td>
+              <td class="col-real">운영위 격주 개최로 변경 — 일정 영향 가능성</td>
+              <td><span class="gap-badge warn">관찰</span></td>
+              <td>모니터링</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 class="section">SECTION 2 — Confirmation Letter 발송 프로세스</h2>
+        <p class="lead">대조표에서 <b>간극</b>이 확인되면 즉시 다음 4단계로 진행합니다. 핵심은 <b>"수신 → 분석 → 안 제출"</b>의 순서를 문서로 못 박는 것 — 이는 추후 분쟁 시 PM/Anchors의 선관주의 의무 이행 증거가 됩니다.</p>
+
+        <div class="flow-row" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+          <div class="flow-step">PM — 대조표에서 간극 식별 (당일 내)</div>
+          <div class="flow-step">PM — 제목에 <b>[긴급:OOO]</b> 명시한 메일 발송 (1영업일 내)</div>
+          <div class="flow-step">PM — 영향 분석 착수 · 비용·일정 변경안 작성</div>
+          <div class="flow-step">PM → 고객 — 변경안 공식 제출 · 승인 대기</div>
+        </div>
+
+        <p style="font-size:12.5px; color:var(--text-secondary); margin:18px 0 6px;"><b>제목 표준 — 3가지 긴급 유형</b></p>
+        <div class="diag-grid">
+          <div class="diag-card" style="border-left:3px solid var(--danger);">
+            <div class="diag-title">[긴급:의사결정필요]</div>
+            <div class="diag-body">고객의 의사결정이 지연되어 프로젝트 진행이 멈춘 경우. 의사결정 부재로 인한 일정 영향과 책임 소재를 명시한다.</div>
+          </div>
+          <div class="diag-card" style="border-left:3px solid var(--warning);">
+            <div class="diag-title">[긴급:추가예산지출]</div>
+            <div class="diag-body">계약 범위를 초과하는 요구사항 발생 또는 인력 증원 필요. 비용 영향과 변경 계약 필요성을 명시한다.</div>
+          </div>
+          <div class="diag-card" style="border-left:3px solid var(--text-muted);">
+            <div class="diag-title">[긴급:일정변경]</div>
+            <div class="diag-body">고객 제공 자료 지연 등 외부 요인으로 인한 마일스톤 변경 필요. 지연 사유와 새 일정안을 명시한다.</div>
+          </div>
+        </div>
+
+        <h2 class="section">SECTION 3 — Confirmation Letter 예시</h2>
+        <p class="lead">실제 발송 형식. 짧고 명확하게, <b>요청 접수 사실 + 계약 범위 외 사항이라는 판단 + 후속 절차</b>를 한 문단에 담는다.</p>
+
+        <div class="conf-letter">
+          <div class="conf-letter-head">
+            <span class="conf-letter-tag">[긴급:추가예산지출]</span>
+            <span class="conf-letter-meta">발신 PM → 수신 고객 PM · CC 고객 임원·Anchors 영업</span>
+          </div>
+          <div class="conf-letter-subject">제목: [긴급:추가예산지출] OO 기능 추가 요청 접수 및 영향 분석 착수 안내</div>
+          <div class="conf-letter-body">
+            안녕하세요. Anchors PM 김OO입니다.<br><br>
+            금일(YYYY-MM-DD) 귀사로부터 요청 받은 <b>OO 기능 추가 사항</b>을 정식 접수하였음을 알려드립니다.<br><br>
+            본 요청은 당사 계약서 제O조 및 요구사항정의서 v1.0에 명시된 범위 외 사항으로 판단되며, 이에 따라 다음 절차를 진행하겠습니다.<br><br>
+            <b>1. 영향 분석</b> — 추가 요건에 대한 공수·일정·기존 범위 영향도를 OO영업일 이내 산출<br>
+            <b>2. 변경안 제출</b> — 비용 변경분과 일정 조정안을 공식 문서로 전달<br>
+            <b>3. 승인 대기</b> — 귀사의 변경 승인 전까지 본 요건은 개발 착수하지 않음<br><br>
+            상기 분석 기간 동안 기존 계약 범위 일정은 정상 진행되며, 본 추가 요건으로 인한 일정·비용 영향은 변경 승인 후 별도 합의됩니다.<br><br>
+            확인 부탁드립니다.
+          </div>
+        </div>
+
+        <div class="conf-letter">
+          <div class="conf-letter-head">
+            <span class="conf-letter-tag">[긴급:의사결정필요]</span>
+            <span class="conf-letter-meta">발신 PM → 수신 고객 PM · CC 고객 임원·Anchors 영업</span>
+          </div>
+          <div class="conf-letter-subject">제목: [긴급:의사결정필요] OO 화면 설계안 승인 지연에 따른 일정 영향 안내</div>
+          <div class="conf-letter-body">
+            안녕하세요. Anchors PM 김OO입니다.<br><br>
+            YYYY-MM-DD 송부드린 <b>OO 화면 설계안(v1.0)</b>에 대한 귀사의 검토·승인이 현재까지 <b>O영업일 지연</b>되고 있음을 알려드립니다.<br><br>
+            본 의사결정은 후속 개발 착수의 전제 조건으로, 추가 지연 시 다음 마일스톤(YYYY-MM-DD UAT 시작)에 직접적인 영향이 발생합니다.<br><br>
+            <b>1. 승인 기한 요청</b> — YYYY-MM-DD까지 회신 부탁드립니다.<br>
+            <b>2. 미회신 시 영향</b> — UAT 일정 O영업일 순연 및 후속 일정 연쇄 조정 불가피<br>
+            <b>3. 일정 영향 발생 시 처리</b> — 본 사유로 인한 일정 변경은 당사 귀책 사유에서 제외됨을 사전 안내드립니다.<br><br>
+            업무 협조 부탁드립니다.
+          </div>
+        </div>
+
+        <h2 class="section">SECTION 4 — 운영 원칙</h2>
+        <ul style="font-size:13px; line-height:1.85; color:var(--text-secondary); margin-left:18px;">
+          <li><b>주 1회 정기 갱신</b> — PM은 매주 금요일 대조표를 갱신하고 Anchors 영업·PM전략실에 공유</li>
+          <li><b>당일 발송 원칙</b> — 간극 식별 후 다음 영업일 내 Confirmation Letter 발송. 지연되면 PM 귀책 가능성 증가</li>
+          <li><b>발송 이력 보존</b> — 모든 Confirmation Letter는 프로젝트 폴더 `/05_change_log/`에 PDF 사본 보관</li>
+          <li><b>구두 합의 금지</b> — 어떤 변경 요청도 구두로 수락하지 않는다. 항상 메일·문서로 회신</li>
+          <li><b>월간 보고 포함</b> — 매월 발송 건수·승인율·금액 영향을 PM전략실 월간 보고에 반영</li>
+        </ul>
+      </article>
+
+      <!-- ===== DOC 9: 주공정 지연 방어 · 의사결정 매트릭스 ===== -->
+      <article class="doc" id="d-defense">
+        <header class="doc-header">
+          <div class="doc-tag">Defensive Process · Schedule Defense</div>
+          <h1 class="doc-title">고객사 귀책 주공정 지연 방어 프로세스</h1>
+          <div class="doc-meta">
+            <span>유형 <strong>일정 방어 절차</strong></span>
+            <span>주관 <strong>PM</strong></span>
+            <span>적용 시점 <strong>고객 귀책 지연 감지 시</strong></span>
+          </div>
+        </header>
+
+        <p class="lead">고객사로 인한 주공정(Critical Path) 지연 및 그에 따른 <b>연쇄 지연</b>을 방어할 수 있는 표준 프로세스. <b>"상황 진단 → 방어 전략 수립 → 방어 전략 실행"</b>의 3단계로 진행하며, 의사결정 매트릭스에 따라 사안의 심각도에 맞춘 대응을 선택합니다.</p>
+
+        <h2 class="section">SECTION 1 — 3단계 방어 프로세스</h2>
+
+        <div class="triage-flow">
+          <div class="triage-step">
+            <div class="triage-step-num">STEP 1</div>
+            <div class="triage-step-title">상황 진단</div>
+            <div class="triage-step-body">지연의 <b>원인·귀책 주체·영향 범위</b>를 객관적 사실 기반으로 파악. 가설 vs 현실 대조표, WBS 일정 비교, 의사소통 기록을 근거로 한다. 추측·감정 금지.</div>
+          </div>
+          <div class="triage-arrow">→</div>
+          <div class="triage-step">
+            <div class="triage-step-num">STEP 2</div>
+            <div class="triage-step-title">방어 전략 수립</div>
+            <div class="triage-step-body">의사결정 매트릭스에 따라 <b>대응 강도</b>를 선택. 리스크 방어력과 고객 관계 영향을 함께 평가하여 최적안을 도출. PM전략실·영업과 사전 합의 권장.</div>
+          </div>
+          <div class="triage-arrow">→</div>
+          <div class="triage-step">
+            <div class="triage-step-num">STEP 3</div>
+            <div class="triage-step-title">방어 전략 실행</div>
+            <div class="triage-step-body">선택한 전략을 <b>문서·메일·회의록</b>으로 기록하며 실행. 실행 결과를 주간 보고에 반영하고, 후속 영향을 다시 STEP 1로 피드백.</div>
+          </div>
+        </div>
+
+        <h2 class="section">SECTION 2 — 의사결정 매트릭스에 따른 방어 전략 수립/실행</h2>
+        <p class="lead">5가지 대응 전략을 <b>리스크 방어력</b>과 <b>고객 관계 영향</b> 두 축으로 평가. <b>핵심 권고는 '변경요청/재계획'</b>으로, 리스크 방어력이 매우 높고 일정·비용 영향이 큰 사안에 필수 적용한다.</p>
+
+        <table class="decision-matrix">
+          <thead>
+            <tr>
+              <th>대응 전략</th>
+              <th>리스크 방어</th>
+              <th>고객 관계</th>
+              <th style="text-align:center;">추천</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>그냥 맞춰줌</b></td>
+              <td>없음</td>
+              <td>좋음</td>
+              <td><span class="dm-x">✕</span></td>
+            </tr>
+            <tr>
+              <td><b>구두 경고</b></td>
+              <td>약함</td>
+              <td>좋음</td>
+              <td><span class="dm-x">✕</span></td>
+            </tr>
+            <tr>
+              <td><b>이메일 기록</b></td>
+              <td>높음</td>
+              <td>균형</td>
+              <td><span class="dm-ok">✓</span></td>
+            </tr>
+            <tr class="highlighted">
+              <td><b>변경요청 / 재계획</b></td>
+              <td><span class="dm-mark">매우 높음</span></td>
+              <td><span class="dm-mark">약함</span></td>
+              <td><span class="dm-required">필수</span></td>
+            </tr>
+            <tr>
+              <td><b>임원 Escalation</b></td>
+              <td>최고</td>
+              <td>약함</td>
+              <td><span class="dm-conditional">상황별</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="mendelow-legend" style="margin-top:14px;">
+          <b>판독 가이드</b> — 위에서 아래로 갈수록 리스크 방어력은 커지지만 고객 관계 마찰이 증가한다. <b>"그냥 맞춰줌"</b>은 단기 관계는 좋아도 적자·범위 무한확장의 직접 원인이 되며 반드시 회피. <b>"이메일 기록"</b>은 모든 사안의 최소 기본 대응. <b>"변경요청/재계획"</b>은 일정·비용 영향이 명확한 경우 <b>반드시 발동</b>한다.
+        </div>
+
+        <h2 class="section">SECTION 3 — 5가지 전략별 사용 시나리오</h2>
+
+        <h3 class="subsec">① 그냥 맞춰줌 <span style="color:var(--danger); font-weight:700;">— 금지</span></h3>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7;">고객의 추가 요청·일정 변경을 무조건 수용하는 방식. 단기 관계는 유지되나 누적된 추가 작업이 결국 적자·인력 소진·품질 저하를 유발한다. <b>대규모 적자가 발생하는 패턴의 출발점</b>이 되는 행위로, 어떤 경우에도 채택하지 않는다.</p>
+
+        <h3 class="subsec">② 구두 경고 <span style="color:var(--danger); font-weight:700;">— 금지</span></h3>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7;">미팅·통화에서 "이건 추가 사항입니다"라고 말로만 알리는 방식. 기록이 남지 않아 추후 분쟁 시 증거력이 없다. <b>반드시 같은 내용을 메일로 정리해 재발송(이메일 기록)</b>한다.</p>
+
+        <h3 class="subsec">③ 이메일 기록 <span style="color:var(--success); font-weight:700;">— 기본 대응</span></h3>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7;">모든 변경 요청·지연 발생 사실을 메일로 기록·회신한다. Confirmation Letter 프로세스가 이에 해당한다. 고객 관계에 큰 영향 없이 책임 소재를 명확히 할 수 있어 <b>모든 사안의 최소 기준선</b>이다.</p>
+
+        <h3 class="subsec">④ 변경요청 / 재계획 <span style="background:#fff3a8; padding:2px 8px; border-radius:3px; font-weight:700;">— 필수</span></h3>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7;">일정·비용에 실질 영향이 명확한 사안에 대해 <b>공식 변경 요청서(CR)를 발행</b>하고 WBS·견적을 재작성해 승인을 받는다. 고객 관계의 단기 마찰은 불가피하나, 이를 회피할 경우 적자가 확정된다. <b>일정 영향 3영업일 이상 · 추가 공수 0.5 M/M 이상</b>이면 필수 발동한다.</p>
+
+        <h3 class="subsec">⑤ 임원 Escalation <span style="color:var(--text-muted); font-weight:700;">— 상황별</span></h3>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7;">PM·고객 PM 레벨에서 합의에 이르지 못한 경우 양측 임원이 개입한다. 리스크 방어력은 최고이나 고객 관계가 즉시 경직되므로 <b>먼저 ③·④ 절차를 거쳐 기록을 충분히 확보한 후</b> 진행해야 한다. 사전에 Anchors CEO·영업 상무 컨센서스 필수.</p>
+
+        <h2 class="section">SECTION 4 — 운영 원칙</h2>
+        <ul style="font-size:13px; line-height:1.85; color:var(--text-secondary); margin-left:18px;">
+          <li><b>당일 진단 원칙</b> — 주공정 지연 신호 감지 시 24시간 내 STEP 1(진단) 완료</li>
+          <li><b>기록 우선</b> — 모든 단계는 메일·MOM·CR 문서로 남긴다. 구두 합의는 효력 없음</li>
+          <li><b>이중 회로</b> — ③ 이메일 기록은 모든 사안에 기본 적용. ④ 변경요청은 임팩트 기준 충족 시 추가 발동</li>
+          <li><b>고객 관계 관리</b> — ④·⑤ 실행 시 영업이 별도 채널로 고객 임원에게 사전 양해 — 조치는 강하게, 톤은 부드럽게</li>
+          <li><b>회고 의무</b> — 분기별 발동 건수·승인율·일정 회복률을 PM전략실이 통계로 관리</li>
+        </ul>
+      </article>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<script>
+// =========================================
+// LNB Navigation
+// =========================================
+const lnbItems = document.querySelectorAll('.lnb-item');
+const docs = document.querySelectorAll('.doc');
+const crumb = document.getElementById('crumb');
+
+lnbItems.forEach(item => {
+  item.addEventListener('click', () => {
+    const targetId = item.dataset.doc;
+    lnbItems.forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    docs.forEach(d => d.classList.remove('active'));
+    const target = document.getElementById(targetId);
+    if (target) {
+      target.classList.add('active');
+      // update breadcrumb from lnb-item first line
+      const title = item.childNodes[0].textContent.trim();
+      crumb.textContent = title;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+});
+
+// =========================================
+// Function spec data — GePMS 29 requirements
+// =========================================
+const FUNCS = [
+  {no:1, daebun:"공통", jungbun:"로그인", sobun:"인증", level:"상", mobile:true, items:["CRUD","UI 화면","인증"], desc:"- 해외) 인증번호 문자로 받을 수 있도록 개선", risk:"① SMS 게이트웨이 미결정\n② 국가코드별 발신 정책 불확실\n③ 운영 정책(유효시간·비용승인) 미확정", q:"1. 현재 해외 사용자의 인증 방식은 무엇인가요?\n2. 문자 발송에 사용할 SMS 게이트웨이가 결정되어 있나요?\n3. 지원할 국가/국가코드 범위가 정해져 있나요?\n4. 인증번호 유효시간 및 재발송 제한 횟수 정책이 있나요?\n5. 비용 승인 주체는 누구인가요?"},
+  {no:2, daebun:"공통", jungbun:"로그인", sobun:"회원가입", level:"상", mobile:true, items:["인증","CRUD"], desc:"- 자산사업본부 해외 현채직 사용자가 회원가입 가능하도록 기능 추가", risk:"① HRM 연동 방식·데이터 존재 여부 미확인\n② 해외 현채직 정의 기준 미확정\n③ 가입 승인 워크플로우 미정\n④ 본인 인증 방법 미결정", q:"1. 해외 현채직의 정의 기준은 무엇인가요?\n2. 회원가입 시 본인 인증 방법은 어떻게 할 계획인가요?\n3. 가입 승인 워크플로우가 있나요?\n4. HRM 시스템에 해외 현채직 데이터가 존재하나요?"},
+  {no:3, daebun:"공통", jungbun:"로그인", sobun:"CI 변경", level:"중", mobile:false, items:["UI 화면","CRUD"], desc:"- 로그인 창에서 고객 회사를 선택하고 로그인 시 고객 CI 메인페이지 표시", risk:"① CI 표시 범위 미확정\n② 고객사 목록 구성 방식 미정", q:"1. 고객 CI(로고/브랜드 이미지) 등록/관리는 어디서 하나요?\n2. CI 표시 범위는 메인페이지에만 적용되나요, 전체 UI에 적용되나요?\n3. 한 사용자가 여러 고객사에 속할 수 있나요?"},
+  {no:4, daebun:"공통", jungbun:"로그인", sobun:"이중로그인", level:"상", mobile:true, items:["인증","보안 기능"], desc:"- 모바일앱/PC웹에서 이중 로그인 기능", risk:"① 허용 vs 방지 정책 미결정 (구현 방향 180도 상이)\n② 세션 토큰 구조 변경 필요\n③ 기존 접속자 알림 여부 미정", q:"1. 이중 로그인 허용인가요, 중복 로그인 방지인가요?\n2. 동일 계정이 PC와 모바일에 동시 접속할 경우 어떻게 처리하나요?\n3. 세션 토큰 관리 방식 변경이 필요한가요?"},
+  {no:5, daebun:"공통", jungbun:"메인 페이지", sobun:"MY PAGE", level:"중", mobile:false, items:["CRUD","UI 화면","파일 업로드/다운로드"], desc:"- 로그인한 본인의 정보를 직접 확인 및 수정 가능하도록 기능 추가", risk:"① 수정 가능 항목 범위 미확정\n② HRM 연동 항목 read-only 처리 여부 미정", q:"1. 수정 가능한 항목과 불가능한 항목의 범위는 어떻게 되나요?\n2. HRM 연동 데이터는 수정 불가 처리해야 하나요?\n3. 변경 이력을 로그로 남겨야 하나요?"},
+  {no:6, daebun:"공통", jungbun:"메인 페이지", sobun:"언어", level:"상", mobile:true, items:["다국어 지원"], desc:"- MY Page에서 나라 선택 시 해당 나라언어로 변경 기능 추가 (모바일 동일)", risk:"① i18n 리소스 미준비 (번역 데이터 전체 신규 구축 가능성)\n② 지원 언어 목록 미확정\n③ RTL 지원 여부 미정\n④ 전체 UI 컴포넌트 영향 범위 광범위", q:"1. 지원할 언어 목록은 무엇인가요?\n2. 번역 데이터(i18n 리소스)가 이미 준비되어 있나요?\n3. RTL(오른쪽→왼쪽) 언어 지원이 필요한가요?"},
+  {no:7, daebun:"공통", jungbun:"모바일", sobun:"NFC", level:"상", mobile:true, items:["네이티브 기능 연동"], desc:"- 모바일 백그라운드 앱에서 NFC 업무 태깅 처리 기능", risk:"① iOS 백그라운드 NFC 제약 (iOS 13+ Core NFC 제한)\n② 처리 대상 업무 유형 미정\n③ NFC 태그 데이터 형식 미정\n④ 앱 완전 종료 상태 동작 요구 여부 미정", q:"1. 백그라운드 NFC 감지 시 처리할 업무 유형은 무엇인가요?\n2. iOS와 Android 모두 지원해야 하나요?\n3. 앱이 완전히 종료된 상태에서도 동작해야 하나요?"},
+  {no:8, daebun:"공통", jungbun:"전체 화면", sobun:"입력 포커스", level:"중", mobile:true, items:["UI 화면"], desc:"- 항목 미기입 및 오기입 시 해당하는 지점으로 커서 이동 및 음영 표시 (모바일 동일)", risk:"① 유효성 검사 시점 미확정\n② 모바일 소프트 키보드 스크롤 충돌 처리 필요", q:"1. 유효성 검사는 저장 버튼 클릭 시에만 수행하나요?\n2. 음영 표시의 색상 및 스타일 가이드가 있나요?\n3. 모바일에서 소프트 키보드와의 스크롤 충돌 처리 방안이 있나요?"},
+  {no:9, daebun:"공통", jungbun:"전체 화면", sobun:"그리드 범위", level:"하", mobile:false, items:["CRUD","페이징 처리"], desc:"- 전체 화면 그리드 조회 범위 100개 ROW로 변경", risk:"① 변경 화면 범위 미확정 (설정값 변경 수준)", q:"1. 현재 그리드 조회 기본값은 몇 개 ROW인가요?\n2. 사용자가 직접 조회 범위를 선택할 수 있어야 하나요?\n3. 페이지네이션 UI 변경이 필요한가요?"},
+  {no:10, daebun:"공통", jungbun:"전체 화면", sobun:"다운로드", level:"상", mobile:false, items:["CRUD","UI 화면","배치 처리"], desc:"- 엑셀 파일 다운로드 공통화\n1) 전체페이지에 엑셀 다운로드 모듈 공통화\n2) 다운로드 시 사유 이력 저장", risk:"① 다운로드 대상 화면 목록 미파악\n② 사유 이력 저장 워크플로우 신규 설계\n③ 이력 데이터 모델 신규 설계\n④ 기존 로직 제거 여부 미정", q:"1. 엑셀 다운로드 기능이 있는 화면과 없는 화면 목록이 파악된 상태인가요?\n2. 다운로드 사유 이력 저장 항목은 무엇인가요?\n3. 사유 입력은 필수인가요, 선택인가요?"},
+  {no:11, daebun:"공통", jungbun:"전체 화면", sobun:"속도", level:"상", mobile:false, items:["배치 처리"], desc:"- 속도개선\n1) 대시보드/통계 속도 개선\n2) TO-DO 업무 처리 속도 개선", risk:"① 성능 병목 원인 미분석\n② 개선 목표 KPI 미정\n③ 대시보드·통계·TO-DO 3개 영역 동시 개선", q:"1. 현재 대시보드/통계의 평균 응답 시간은? 목표 응답 시간은?\n2. 성능 병목 원인 분석이 이루어졌나요?\n3. 성능 개선 목표 수치(KPI)가 정해져 있나요?"},
+  {no:12, daebun:"공통", jungbun:"인터페이스", sobun:"HRM", level:"상", mobile:false, items:["외부 API 연동","보안 기능","권한 관리"], desc:"- HRM 연동 자동화\n1) 자산관리사업본부 임직원 인사발령 시 사업장 권한 부여 자동 로직 개선\n2) 인사발령 변경 시 권한 회수 and 부여 로직 개선\n3) 퇴사&해지 사용자 권한회수", risk:"① HRM 연동 방식 미결정\n② 임직원 식별 기준 코드 미공유\n③ 실시간 vs 배치 아키텍처 전면 상이\n④ 권한 실패 시 재시도·알림 체계 신규 설계\n⑤ 퇴사 후 권한 회수 허용 시간 기준 미정", q:"1. 현재 HRM 연동 방식은 무엇인가요?\n2. 인사발령 이벤트를 실시간으로 수신할 수 있나요?\n3. '자산관리사업본부 임직원'의 식별 기준 코드는 어떻게 관리되나요?\n4. 퇴사 처리 후 권한 회수까지의 허용 시간 기준이 있나요?"},
+  {no:13, daebun:"TO-DO", jungbun:"TO-DO 발행", sobun:"비정기 발행 관리", level:"상", mobile:true, items:["CRUD","외부 API 연동","네이티브 기능 연동"], desc:"- 비정기 발행 통합관리\n1) 모바일 점검작업 중 부적합 발생 시 비정기 작업 자동 발행\n2) 비정기 TO-DO 일괄 등록 및 처리 결과 일괄 출력\n3) 비정기작업 결과가 \"장비이력카드\"에 포함\n4) 비정기 작업 결과가 점검이력, 유지보수 이력에 자동 반영\n5) QR코드 스캔으로 장비 상세·수리이력 조회 및 비정기 작업 발행", risk:"① 자동 발행 vs 승인 절차 정책 미결정\n② 연결 TO-DO 양방향 조치결과 연동\n③ 장비이력카드 데이터 구조 미공유\n④ QR 스캔 모바일 네이티브 카메라 연동\n⑤ 5개 세부 기능 복합 동시 개발", q:"1. '부적합 발생 → 비정기 작업 자동 발행' 시 승인 절차가 필요한가요?\n2. 연결 TO-DO 간 조치결과 연동 방식은 단방향인가요, 양방향인가요?\n3. 장비이력카드 데이터 구조 및 현재 관리 방식을 공유받을 수 있나요?\n4. QR코드 스캔 시 비정기 작업 발행 권한을 모든 사용자에게 부여하나요?"},
+  {no:14, daebun:"TO-DO", jungbun:"TO-DO 발행", sobun:"작업 변경", level:"중", mobile:false, items:["CRUD","UI 화면"], desc:"- TO-DO 작업 관리 고도화\n1) 작업주기변경승인 장비명 확인불가 기능 개선\n2) 월간/연간의 경우 요일로 선택 가능\n3) 작업일정 개별/일괄 변경 기능 개선", risk:"① 요일 선택 방식 미정 (매주 X요일 vs N번째 주 X요일)\n② 일정 변경 이력 관리 여부 미정", q:"1. 작업주기변경승인 화면에서 장비명이 표시되지 않는 근본 원인이 파악되어 있나요?\n2. 월간/연간 발행 시 요일 선택은 '매주 X요일' 형태인가요, 'N번째 주 X요일' 형태인가요?\n3. 일정 변경 이력을 별도로 관리해야 하나요?"},
+  {no:15, daebun:"TO-DO", jungbun:"TO-DO 발행", sobun:"순찰(시설/미화/보안)", level:"중", mobile:false, items:["CRUD","UI 화면"], desc:"- 순찰기능 고도화\n1) (시설/미화) 순찰 TO-DO 발행/처리 기능 개선\n2) 주말 근무 로직 추가", risk:"① 주말 근무 로직 미정 (사전 등록 vs 당일 입력)\n② 시설·미화·보안 순찰 플로우 차이 미파악", q:"1. 현재 순찰 TO-DO 발행/처리에서 불편한 구체적인 사례가 있나요?\n2. 주말 근무 시 '평일처럼 횟수 추가'의 의미는 무엇인가요?\n3. 시설/미화/보안 순찰 간 처리 플로우 차이가 있나요?"},
+  {no:16, daebun:"TO-DO", jungbun:"TO-DO 발행", sobun:"업무 발행", level:"상", mobile:false, items:["CRUD","UI 화면","알림/Push"], desc:"- 업무처리그룹 변경\n1) 업무처리그룹 변경 시 TO-DO 발행/실행에 자동 적용\n2) 담당자 삭제 시 담당자 성명 조회\n3) 1년 이상 정기검사 발행\n4) 사업장표준 일/주/월 추가등록\n5) 작업자 정보 중복인원 등록 개선\n6) Whatsapp 일간 작업 미발송", risk:"① 업무처리그룹 변경 소급 적용 여부 미정\n② 복잡한 6개 세부 기능\n③ WhatsApp 알림 모듈 연동 변경\n④ 1년 이상 정기검사 발행 주기 신규 구현", q:"1. 업무처리그룹 변경 시 기존 발행 TO-DO에도 소급 적용하나요?\n2. 1년 이상 정기검사 발행의 경우 현재 지원되지 않는 발행 주기가 있나요?\n3. 사업장표준 추가등록 권한은 누구에게 부여하나요?\n4. WhatsApp 일간 작업 알림 미발송 정책이 필요한 배경은 무엇인가요?"},
+  {no:17, daebun:"TO-DO", jungbun:"TO-DO 관리", sobun:"MY TO-DO", level:"중", mobile:false, items:["CRUD","UI 화면"], desc:"- MY TO-DO 조회기능 강화\n1) 발행 목록 정렬\n2) 중단 TO-DO 표시/조회\n3) TO-DO 삭제\n4) 같은 그룹 내 처리 확인\n5) 완료 처리 TO-DO 이전 단계 복원\n6) 전체 리스트 장비명 표시\n7) 기본값 당일 발생+미처리만", risk:"① TO-DO 삭제 방식(물리 vs 소프트) 미정\n② 완료 TO-DO 복원 로직 — 상태 전환 이력 관리", q:"1. 목록 정렬 기준으로 어떤 항목을 제공해야 하나요?\n2. TO-DO 삭제 기능은 물리 삭제인가요, 소프트 삭제인가요?\n3. 완료 처리한 TO-DO를 이전 단계로 복원 가능한 기간 제한이 있나요?\n4. 같은 업무처리그룹 내 처리 현황 공개 범위는 어떻게 되나요?"},
+  {no:18, daebun:"현장 업무", jungbun:"시설 장비", sobun:"시설관리", level:"중", mobile:false, items:["CRUD","UI 화면","파일 업로드/다운로드"], desc:"- 시설 조회 기능 강화\n1) 사고/고장 기기 색 구분\n2) 건물(동) 별 장비 필터\n3) 사양/부품/이력 첨부파일 등록\n4) 이력정보 사진첨부 (작업전/후)", risk:"① 사고·고장 색상 코드·상태값 기준 미정\n② 건물(동) 정보 DB 등록 여부 미확인", q:"1. 사고/고장 상태 구분의 색상 코드가 정해져 있나요?\n2. '사고'와 '고장'의 시스템 상 상태값 기준이 있나요?\n3. 건물(동) 정보는 현재 시스템 DB에 등록되어 있나요?"},
+  {no:19, daebun:"현장 업무", jungbun:"법정 선임자/검사", sobun:"법정검사 관리", level:"중", mobile:false, items:["CRUD","UI 화면"], desc:"- 검사 실적 일괄 등록 및 일괄 출력 기능 추가", risk:"① 일괄 등록 방식(엑셀 업로드 vs 다중 행 입력) 미정\n② 법적 양식 존재 여부 미확인", q:"1. 일괄 등록의 입력 방식은 엑셀 업로드인가요, 화면 내 다중 행 입력인가요?\n2. 일괄 출력의 출력물 양식 및 포맷이 정해져 있나요?\n3. 일괄 등록 실패(일부 오류) 시 처리 방식은?"},
+  {no:20, daebun:"모바일", jungbun:"작업 메인", sobun:"QR 태깅", level:"상", mobile:true, items:["네이티브 기능 연동","CRUD"], desc:"- QR태깅 작업 관리\n1) 시설점검작업 QR태깅 시 태깅 일시 관리\n2) 미화 실제 태깅한 위치만 완료처리\n3) 모바일 TO-DO 요청 수락 후 QR 태깅으로 진행 전환\n4) 시설장비QR 태깅 시 운전일지 버튼 노출", risk:"① GPS 위치 기반 vs QR 물리 위치 기반 검증 방식 미결정\n② 운전일지 대상 장비 판별 기준 미정\n③ 태깅 일시 관리 데이터 보존·조회 방식 미정\n④ QR 위치 검증 실패 후속 처리 미정", q:"1. 태깅 일시 관리 데이터의 보존 기간 및 조회 방식이 있나요?\n2. '실제 태깅한 위치만 완료처리'란 GPS 위치 기반 검증인가요?\n3. 운전일지 대상 장비의 판별 기준은 무엇인가요?\n4. QR 태깅 위치 검증 실패 시 후속 절차는?"},
+  {no:21, daebun:"모바일", jungbun:"작업 메인", sobun:"미화 작업", level:"중", mobile:true, items:["CRUD","UI 화면"], desc:"- 미화 일상작업에 대한 SOP 조회기능 추가", risk:"① SOP 데이터 미등록 가능성\n② SOP↔미화 일상작업 연결 방식 미정 (1:1 vs 1:N)", q:"1. SOP 데이터는 현재 시스템에 등록되어 있나요, 새로 입력해야 하나요?\n2. SOP와 미화 일상작업 항목의 연결 방식은 어떻게 되나요?"},
+  {no:22, daebun:"모바일", jungbun:"안전", sobun:"사전작업허가서", level:"중", mobile:true, items:["인증","보안 기능"], desc:"- PTW 기능 사용을 위해 로그인 절차 간소화 및 접속 시간 연장", risk:"① 로그인 간소화 시 보안 정책 최소 요건 유지 기준 미정\n② 불편 단계 미파악 — 현행 프로세스 분석 선행 필요", q:"1. 현재 PTW 로그인 절차 중 어느 단계가 불편한가요?\n2. 접속 시간 연장의 목표 세션 유지 시간은 어느 정도인가요?\n3. 로그인 간소화 시 보안 정책 최소 인증 요건 유지 기준이 있나요?"},
+  {no:23, daebun:"모바일", jungbun:"알림", sobun:"카카오톡/왓츠앱/SMS/PUSH", level:"상", mobile:true, items:["알림/Push","푸시알림","UI 화면"], desc:"- 알림 PUSH\n1) 모바일 알림 PUSH 기능 구현\n2) 기 카카오톡/왓츠앱/SMS 알림 모바일 PUSH 전환\n3) PUSH 알림 관리 페이지 개발 (PC만)\n4) PUSH 선택 시 연결된 페이지 이동\n5) 모든 메시지에 사업장명 표시", risk:"① FCM·APNs 솔루션 미결정 — 인프라 신규 구축 필요\n② 기존 채널과 병행 vs 전환 미결정\n③ PUSH 관리 페이지 신규 개발\n④ 딥링크 연동 방식 미정", q:"1. PUSH 알림 서비스는 어떤 솔루션을 사용할 계획인가요?\n2. 기존 카카오톡/왓츠앱/SMS 알림은 PUSH로 완전 대체되나요?\n3. PUSH 관리 페이지에서 관리할 항목은 무엇인가요?\n4. PUSH 선택 시 이동할 페이지의 딥링크 연동 방식이 정해져 있나요?"},
+  {no:24, daebun:"안전", jungbun:"안전관리", sobun:"위험성 평가", level:"상", mobile:true, items:["CRUD","UI 화면","외부 API 연동"], desc:"- 위험성평가 개선 회의/전파교육 종사자 의견 청취 기능 개선\n1) 회의 내 의견청취 기능 추가\n2) 위험성평가표 內 개선관리사항 추가\n3) 전회차 선택하여 불러오기\n4) 위험성평가표 항목별 저장상황 표출", risk:"① 의견청취 입력 방식 미결정\n② 의견청취 관리·지적사항 화면 연동 방식 미정\n③ 지적사항 데이터 구조 미공유\n④ 위험성평가표 신규 양식 미공유\n⑤ 4개 세부 기능 복합", q:"1. 위험성평가 회의 의견청취 기능에서 참석자별 의견 입력인가요?\n2. 발굴된 의견이 '의견청취 관리'로 연동될 때 자동 연동인가요?\n3. '지적사항' 화면과의 연동 방식 및 데이터 구조를 공유받을 수 있나요?\n4. 첨부파일로 기재된 위험성평가표 양식을 개발팀이 확인할 수 있나요?"},
+  {no:25, daebun:"안전", jungbun:"안전관리", sobun:"사전 작업 허가서(PTW)", level:"중", mobile:true, items:["CRUD","알림/Push"], desc:"- PTW 결과 등록 기능\n1) PTW 결재 후 결과 등록 (KEY IN 및 첨부파일)\n2) 결재자 결재 요청 문자/메일 발송", risk:"① SMTP 메일 발송 인프라 연동 여부 미확인\n② 다수 결재자 알림 방식(동시 vs 단계별) 미정", q:"1. PTW 결재 완료 후 결과 등록 가능 기간 제한이 있나요?\n2. 문자 발송과 메일 발송 중 사용자가 선택할 수 있나요?\n3. 결재자가 여러 명일 경우 알림을 동시 발송하나요?\n4. 현재 메일 발송 인프라(SMTP 등)가 연동되어 있나요?"},
+  {no:26, daebun:"안전", jungbun:"안전관리", sobun:"안전점검", level:"중", mobile:false, items:["UI 화면"], desc:"- 안전점검 시 개선 전과 개선 후를 한 화면에서 모두 처리할 수 있도록 간소화 화면 개선", risk:"① 개선 전/후 처리 플로우 화면 미공유\n② 개선 후 입력 별도 권한 여부 미정", q:"1. 현재 개선 전/후를 별도 화면에서 처리하는 플로우 화면을 공유받을 수 있나요?\n2. 한 화면에서 처리 시 개선 후 입력은 별도 권한이 필요한가요?\n3. 개선 기한 및 담당자 지정 기능도 포함되나요?"},
+  {no:27, daebun:"품질", jungbun:"작업실적조회", sobun:"부적합 품질관리", level:"상", mobile:true, items:["CRUD","UI 화면","파일 업로드/다운로드"], desc:"- 부적합 작업 품질관리 개선\n1) 이상유무 확인 결과 필터링\n2) 시설/미화/보안 부적합 사항 후속 조치\n3) 미화 관리자 일상점검 부적합 조회 화면\n4) 부적합 발생 시 해당 장비 기존 작업 불러오기\n5) 부적합 사항 일괄 다운로드", risk:"① 후속조치 워크플로우(배정→조치→완료) 미정\n② 기존 작업 불러오기 데이터 범위 미정\n③ 시설·미화·보안 3개 영역 통합 조회 구조 설계\n④ 일괄 다운로드 형식·포함 항목 미정", q:"1. 시설/미화/보안 부적합 후속조치 워크플로우가 정해져 있나요?\n2. '해당 장비 기존 작업 불러오기'에서 불러오는 데이터 범위는 어디까지인가요?\n3. 일괄 다운로드 파일 형식 및 포함 항목이 정해져 있나요?\n4. 부적합 후속조치 담당자 지정은 자동인가요, 수동인가요?"},
+  {no:28, daebun:"품질", jungbun:"리포트", sobun:"리포트", level:"상", mobile:true, items:["데이터 시각화","UI 화면"], desc:"- 리포트\n1) 고객 월별 리포트 컨텐츠 전면 수정\n2) L-SOP 출력물 전면 수정\n3) 운전일지 리포트 엑셀 다운로드", risk:"① 고객 월별 리포트 신규 양식 미공유\n② L-SOP 출력물 신규 양식 미공유\n③ 운전일지 엑셀 포함 항목 미정\n④ 3종 리포트 동시 전면 수정", q:"1. 고객 월별 리포트 전면 수정의 신규 컨텐츠 구성이 정해져 있나요?\n2. L-SOP 출력물 수정의 변경 항목 및 기존/신규 양식을 공유받을 수 있나요?\n3. 운전일지 엑셀 다운로드 시 어떤 데이터 항목이 포함되는지 정의되었나요?\n4. 기존 리포트와의 하위 호환성이 필요한가요?"},
+  {no:29, daebun:"표준", jungbun:"표준 업무", sobun:"표준업무", level:"하", mobile:false, items:["UI 화면"], desc:"- 경고 알람 팝업\n1) 순찰 경로 수정 시 TO-DO 재발행 메시지\n2) 표준/법정/교육 등 표준 사용여부 '아니오' 후 저장 시 리셋 경고", risk:"① 경고 후 저장 제한 여부(안내 vs 저장 차단) 미정", q:"1. 경고 팝업의 확인/취소 버튼은 단순 확인 용도인가요?\n2. 경고 알람 후 리셋이 진행되는 경우, 과거 이력을 관리해야 하나요?"},
+];
+
+function levelClass(lv) {
+  if (lv === '상') return 'lv-h';
+  if (lv === '중') return 'lv-m';
+  if (lv === '하') return 'lv-l';
+  return '';
+}
+
+function renderFuncs(filter) {
+  const container = document.getElementById('func-list');
+  if (!container) return;
+  let html = '';
+  FUNCS.filter(f => {
+    if (filter === 'all') return true;
+    if (filter === 'mobile') return f.mobile;
+    return f.level === filter;
+  }).forEach(f => {
+    const itemChips = f.items.map(i => `<span class="chip">${i}</span>`).join('');
+    html += `
+      <div class="func-block">
+        <div class="func-head">
+          <span class="func-no">No.${f.no}</span>
+          <span class="func-cat">${f.daebun} · ${f.jungbun} · ${f.sobun}</span>
+          <span class="func-name">${f.sobun}</span>
+          <span class="chip ${levelClass(f.level)}">난이도 ${f.level}</span>
+          ${f.mobile ? '<span class="chip mobile">📱 모바일</span>' : ''}
+        </div>
+        <div class="func-body">
+          <div class="func-meta">${itemChips}</div>
+          <div class="func-desc">${f.desc}</div>
+          <div class="func-questions"><b>주요 위험 요소</b>${f.risk}</div>
+          <div class="func-questions" style="margin-top:8px; border-left-color:var(--gold);"><b>요청 질의 항목</b>${f.q}</div>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+// initial render
+renderFuncs('all');
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFuncs(btn.dataset.filter);
+  });
+});
+
+</script>
+</body>
+</html>
